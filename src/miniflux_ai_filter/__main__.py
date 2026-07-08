@@ -1,9 +1,11 @@
 """Entry point for the miniflux-ai-filter package."""
 
+from miniflux_ai_filter.main import run_pipeline
+
 
 def main() -> None:
     """Main entry point for the application."""
-    print("Miniflux AI Filter — ready")
+    run_pipeline()
 
 
 if __name__ == "__main__":
