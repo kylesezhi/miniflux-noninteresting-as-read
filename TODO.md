@@ -287,7 +287,7 @@ Acceptance criteria:
 - Only uninteresting articles are marked read
 - Interesting articles remain unread
 
-## Milestone 11: Add Opencode Go Client
+## Milestone 8.5: Add Opencode Go Client
 
 Goal:
 Add support for Opencode Go as an alternative LLM provider.
