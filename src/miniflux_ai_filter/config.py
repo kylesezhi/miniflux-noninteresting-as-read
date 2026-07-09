@@ -38,6 +38,10 @@ class Settings(BaseSettings):
         ...,
         description="OpenRouter API key",
     )
+    OPENCODEGO_API_KEY: str = Field(
+        default="",
+        description="Opencode Go API key (required when LLM_PROVIDER=opencodego)",
+    )
 
     # ── Optional (with sensible defaults) ─────────────────────────────
     MAX_ARTICLES_PER_RUN: int = Field(
@@ -48,6 +52,14 @@ class Settings(BaseSettings):
     OPENROUTER_MODEL: str = Field(
         default="openai/gpt-oss-120b:free",
         description="OpenRouter model identifier",
+    )
+    OPENCODEGO_MODEL: str = Field(
+        default="deepseek-v4-flash",
+        description="Opencode Go model identifier",
+    )
+    LLM_PROVIDER: str = Field(
+        default="openrouter",
+        description="LLM provider to use (openrouter or opencodego)",
     )
 
     # ── Computed fields (populated after init) ────────────────────────
