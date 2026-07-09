@@ -245,6 +245,15 @@ Key settings in the config:
 | `error_file` | `logs/pm2/err.log` | PM2 stderr log |
 | `out_file` | `logs/pm2/out.log` | PM2 stdout log |
 
+#### Install Dependencies
+
+Before starting the process, install the project dependencies:
+
+```bash
+cd /path/to/miniflux-noninteresting-as-read
+uv sync
+```
+
 #### Start the Process
 
 ```bash
@@ -330,7 +339,14 @@ pm2 restart ecosystem.config.js
 
 ### Alternative: System Cron
 
-If you prefer not to use PM2, a simple cron entry works just as well:
+If you prefer not to use PM2, first install the project dependencies:
+
+```bash
+cd /path/to/miniflux-noninteresting-as-read
+uv sync
+```
+
+Then add a simple cron entry:
 
 ```cron
 # Run every hour
