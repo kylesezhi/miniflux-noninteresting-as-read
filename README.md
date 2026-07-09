@@ -70,29 +70,15 @@ The tool will:
 
 ## How It Works
 
-```
-┌─────────────┐     ┌──────────────┐     ┌─────────────┐
-│  Miniflux   │────▶│  AI Filter   │────▶│  OpenRouter │
-│  (RSS Feeds)│     │  (Classifier)│     │  (LLM API)  │
-└─────────────┘     └──────────────┘     └─────────────┘
-       │                    │
-       │                    ▼
-       │           ┌──────────────┐
-       │           │  Interesting? │
-       │           └──────────────┘
-       │              │         │
-       │              │ No      │ Yes
-       │              ▼         ▼
-       │     ┌────────────┐  ┌──────────┐
-       │     │ Mark Read  │  │  Leave   │
-       │     │ in Miniflux│  │ Unread   │
-       │     └────────────┘  └──────────┘
-       │
-       ▼
-┌─────────────┐
-│  JSONL Log  │
-│  (Audit)    │
-└─────────────┘
+```mermaid
+graph TD
+    M[Miniflux<br/>RSS Feeds] --> AI[AI Filter<br/>Classifier]
+    AI --> OR[OpenRouter<br/>LLM API]
+    AI --> D{Interesting?}
+    D -->|No| MR[Mark Read<br/>in Miniflux]
+    D -->|Yes| LU[Leave<br/>Unread]
+    M --> L[JSONL Log<br/>Audit]
+    AI --> L
 ```
 
 ## Classification Topics
