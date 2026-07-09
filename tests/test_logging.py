@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 
-from miniflux_ai_filter.logging import JsonlLogger
+from miniflux_ai_filter.jsonl_logger import JsonlLogger
 from miniflux_ai_filter.models import Article
 
 
