@@ -17,11 +17,12 @@ module.exports = {
     {
       name: "miniflux-ai-filter",
 
-      // Use `uv run python -m miniflux_ai_filter` as the command.
+      // Use `uv run python src/miniflux_ai_filter/__main__.py`
+      // instead of `python -m miniflux_ai_filter` because PM2
+      // resolves `script` as a file path and cannot handle `-m`.
       interpreter: "uv",
       interpreter_args: "run python",
-      script: "-m",
-      args: "miniflux_ai_filter",
+      script: "src/miniflux_ai_filter/__main__.py",
 
       // Run once every hour on the hour.
       cron_restart: "0 * * * *",
