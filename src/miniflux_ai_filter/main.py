@@ -21,15 +21,14 @@ from miniflux_ai_filter.config import Settings
 from miniflux_ai_filter.logging import JsonlLogger
 from miniflux_ai_filter.miniflux import MinifluxClient, MinifluxError
 from miniflux_ai_filter.models import Article
-from miniflux_ai_filter.openrouter import OpenRouterClient
 
 
 def run_pipeline() -> None:
     """Execute the full classification pipeline.
 
     This is the top-level entry point for the application.  It wires together
-    configuration, the Miniflux API client, the OpenRouter (LLM) client, the
-    classifier, and the JSONL logger into a single run that:
+    configuration, the Miniflux API client, the classifier, and the JSONL
+    logger into a single run that:
 
     - Fetches unread articles from the configured feeds
     - Classifies each with the LLM
@@ -47,11 +46,7 @@ def run_pipeline() -> None:
         base_url=config.MINIFLUX_URL,
         api_token=config.MINIFLUX_API_TOKEN,
     )
-    openrouter_client = OpenRouterClient(
-        api_key=config.OPENROUTER_API_KEY,
-        model=config.OPENROUTER_MODEL,
-    )
-    classifier = Classifier(client=openrouter_client)
+    classifier = Classifier(settings=config)
     logger = JsonlLogger()
 
     # ── 4. Fetch unread articles ───────────────────────────────────────
@@ -93,7 +88,7 @@ def run_pipeline() -> None:
                 interesting=result.interesting,
                 reason=result.reason,
                 run_id=run_id,
-                model=config.OPENROUTER_MODEL,
+                model=classifier.model,
             )
 
         except (ClassificationError, MinifluxError) as exc:

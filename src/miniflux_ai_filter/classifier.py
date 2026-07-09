@@ -1,15 +1,16 @@
 """Article classifier that uses an LLM to determine interest.
 
 Owns the classification prompt and formatting logic, delegating the actual
-API call to a generic :class:`~miniflux_ai_filter.openrouter.OpenRouterClient`.
+API call to a generic :class:`~miniflux_ai_filter.opencodego.OpencodeGoClient`.
 """
 
 from __future__ import annotations
 
 import json
 
+from miniflux_ai_filter.config import Settings
 from miniflux_ai_filter.models import Article, ClassificationResult
-from miniflux_ai_filter.openrouter import OpenRouterClient, OpenRouterError
+from miniflux_ai_filter.opencodego import OpencodeGoClient, OpencodeGoError
 
 
 class ClassificationError(Exception):
@@ -21,13 +22,12 @@ class ClassificationError(Exception):
 
 
 class Classifier:
-    """Classifies articles using an LLM via OpenRouter.
+    """Classifies articles using an LLM via Opencode Go.
 
     Parameters
     ----------
-    client:
-        A configured :class:`~miniflux_ai_filter.openrouter.OpenRouterClient`
-        instance.
+    settings:
+        Application settings used to configure the Opencode Go client.
     """
 
     # ── Prompt template ───────────────────────────────────────────────
@@ -46,8 +46,18 @@ class Classifier:
         "Uninteresting topics: cars, motorcycles, sports."
     )
 
-    def __init__(self, client: OpenRouterClient) -> None:
-        self._client = client
+    def __init__(self, settings: Settings) -> None:
+        self._client = OpencodeGoClient(
+            api_key=settings.OPENCODEGO_API_KEY,
+            model=settings.OPENCODEGO_MODEL,
+            timeout=settings.OPENCODEGO_TIMEOUT_SECONDS,
+        )
+        self._model = settings.OPENCODEGO_MODEL
+
+    @property
+    def model(self) -> str:
+        """The model identifier used by this classifier."""
+        return self._model
 
     # ── Public API ────────────────────────────────────────────────────
 
@@ -77,7 +87,7 @@ class Classifier:
                 system_prompt=self.SYSTEM_PROMPT,
                 user_message=user_message,
             )
-        except OpenRouterError as exc:
+        except OpencodeGoError as exc:
             raise ClassificationError(
                 f"LLM classification failed: {exc.message}"
             ) from exc
