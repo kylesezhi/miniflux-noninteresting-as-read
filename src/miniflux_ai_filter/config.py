@@ -57,6 +57,11 @@ class Settings(BaseSettings):
         default="deepseek-v4-flash",
         description="Opencode Go model identifier",
     )
+    OPENCODEGO_TIMEOUT_SECONDS: int = Field(
+        default=60,
+        ge=1,
+        description="Opencode Go request timeout in seconds",
+    )
     LLM_PROVIDER: str = Field(
         default="openrouter",
         description="LLM provider to use (openrouter or opencodego)",

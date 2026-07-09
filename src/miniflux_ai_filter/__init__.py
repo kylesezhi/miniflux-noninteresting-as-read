@@ -5,6 +5,7 @@ from miniflux_ai_filter.config import Settings
 from miniflux_ai_filter.logging import JsonlLogger
 from miniflux_ai_filter.miniflux import MinifluxClient
 from miniflux_ai_filter.models import Article, ClassificationResult, ClassificationLog
+from miniflux_ai_filter.opencodego import OpencodeGoClient, OpencodeGoError
 from miniflux_ai_filter.openrouter import OpenRouterClient, OpenRouterError
 
 __all__ = [
@@ -15,6 +16,8 @@ __all__ = [
     "Classifier",
     "JsonlLogger",
     "MinifluxClient",
+    "OpencodeGoClient",
+    "OpencodeGoError",
     "OpenRouterClient",
     "OpenRouterError",
     "Settings",
