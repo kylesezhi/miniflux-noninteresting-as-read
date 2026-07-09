@@ -7,9 +7,14 @@ that belongs in :mod:`miniflux_ai_filter.classifier`.
 
 from __future__ import annotations
 
+import logging
+import time
 from typing import Any
 
 import requests
+
+
+logger = logging.getLogger(__name__)
 
 
 class OpencodeGoError(Exception):
@@ -81,6 +86,7 @@ class OpencodeGoClient:
             If the API call fails or the response structure is unexpected.
         """
         payload = self._build_payload(system_prompt, user_message)
+        start = time.monotonic()
 
         try:
             response = requests.post(
@@ -90,21 +96,52 @@ class OpencodeGoClient:
                 timeout=self.timeout,
             )
         except requests.Timeout as exc:
+            elapsed = time.monotonic() - start
+            logger.error(
+                "Opencode Go request timed out after %ss [duration=%.2fs]",
+                self.timeout,
+                elapsed,
+            )
             raise OpencodeGoError(
                 f"Opencode Go request timed out after {self.timeout}s"
             ) from exc
         except requests.ConnectionError as exc:
+            elapsed = time.monotonic() - start
+            logger.error(
+                "Opencode Go connection failed after %.2fs: %s",
+                elapsed,
+                exc,
+            )
             raise OpencodeGoError(
                 f"Opencode Go connection failed: {exc}"
             ) from exc
         except requests.RequestException as exc:
+            elapsed = time.monotonic() - start
+            logger.error(
+                "Opencode Go request failed after %.2fs: %s",
+                elapsed,
+                exc,
+            )
             raise OpencodeGoError(f"Opencode Go request failed: {exc}") from exc
 
+        elapsed = time.monotonic() - start
+
         if not response.ok:
+            logger.warning(
+                "Opencode Go API error [%s] after %.2fs",
+                response.status_code,
+                elapsed,
+            )
             raise OpencodeGoError(
                 f"Opencode Go API error [{response.status_code}]: {response.text}"
             )
 
+        logger.info(
+            "Opencode Go request succeeded [model=%s, status=%s, duration=%.2fs]",
+            self.model,
+            response.status_code,
+            elapsed,
+        )
         return self._extract_content(response.json())
 
     # ── Internal helpers ──────────────────────────────────────────────
