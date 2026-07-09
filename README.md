@@ -126,6 +126,17 @@ miniflux-noninteresting-as-read/
 ├── README.md               # This file
 ├── logs/                   # JSONL audit logs
 │   └── .gitkeep
+├── scripts/
+│   └── calibrate.py        # LLM calibration / edge-case validation
+├── tests/
+│   ├── __init__.py
+│   ├── conftest.py         # Shared fixtures (mock clients, sample articles)
+│   ├── test_classifier.py  # Classifier unit tests (formatting, parsing, classification)
+│   ├── test_config.py      # Configuration parsing and validation tests
+│   ├── test_logging.py     # JSONL audit trail tests
+│   ├── test_miniflux.py    # Miniflux API client tests
+│   ├── test_opencodego.py  # Opencode Go client tests
+│   └── test_openrouter.py  # OpenRouter client tests
 └── src/
     └── miniflux_ai_filter/
         ├── __init__.py     # Package initialization
@@ -134,6 +145,8 @@ miniflux-noninteresting-as-read/
         ├── miniflux.py     # Miniflux API client
         ├── models.py       # Data models (Article, ClassificationResult, etc.)
         ├── openrouter.py   # OpenRouter LLM client
+        ├── opencodego.py   # Opencode Go LLM client
+        ├── protocols.py    # LLMClient protocol and base exceptions
         ├── classifier.py   # Article classification logic
         ├── logging.py      # JSONL audit trail
         └── main.py         # Orchestration
@@ -158,11 +171,59 @@ LLM failures and Miniflux update failures are also logged.
 
 ## Development
 
-### Running Tests
+### Unit Tests
+
+The project uses [pytest](https://docs.pytest.org/) for unit testing with mocked HTTP clients — no real API credentials are needed.
 
 ```bash
+# Run all tests
 uv run pytest
+
+# Run with verbose output
+uv run pytest -v
+
+# Run a specific test file
+uv run pytest tests/test_classifier.py
+
+# Run a specific test class
+uv run pytest tests/test_classifier.py::TestParseResponse
+
+# Run a specific test
+uv run pytest tests/test_classifier.py::TestParseResponse::test_valid_json
 ```
+
+Tests cover:
+
+| Module | Tests | Key scenarios |
+|---|---|---|
+| `classifier.py` | 24 | Article formatting, content truncation, JSON parsing, LLM error handling, edge case classification |
+| `config.py` | 13 | Feed ID parsing, missing required fields, default values, provider config |
+| `miniflux.py` | 9 | Entry deserialization, feed fetching, mark-as-read, error handling, URL construction |
+| `opencodego.py` | 11 | Payload construction, response extraction, HTTP errors, timeouts, auth headers |
+| `openrouter.py` | 10 | Same coverage as Opencode Go client |
+| `logging.py` | 6 | JSONL output, multiple entries, directory creation, error logging |
+
+### Calibration Script
+
+The calibration script sends each edge-case article to your configured LLM provider and reports whether the classification was correct. This is useful for validating prompt quality against a real model.
+
+**Edge cases tested:**
+
+| Article | Expected | Category |
+|---|---|---|
+| "Tesla announces new vehicle lineup" | Filter (not interesting) | Cars |
+| "MotoGP championship results" | Filter (not interesting) | Motorcycles |
+| "NFL season preview" | Filter (not interesting) | Sports |
+| "AI model trains Tesla robot" | Keep (interesting) | AI / programming |
+| "NASA spacecraft software update" | Keep (interesting) | Space / engineering |
+| "Linux kernel security vulnerability" | Keep (interesting) | Cybersecurity |
+
+```bash
+# Requires a properly configured .env file with real API credentials
+uv run python scripts/calibrate.py
+```
+
+If any edge cases fail, tune the `SYSTEM_PROMPT` in `src/miniflux_ai_filter/classifier.py` and re-run the calibration script.
 
 ### Manual Testing
 
