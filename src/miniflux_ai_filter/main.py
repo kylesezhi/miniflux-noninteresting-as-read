@@ -21,6 +21,9 @@ from miniflux_ai_filter.config import Settings
 from miniflux_ai_filter.logging import JsonlLogger
 from miniflux_ai_filter.miniflux import MinifluxClient, MinifluxError
 from miniflux_ai_filter.models import Article
+from miniflux_ai_filter.opencodego import OpencodeGoClient
+from miniflux_ai_filter.openrouter import OpenRouterClient
+from miniflux_ai_filter.protocols import LLMClient
 
 
 def run_pipeline() -> None:
@@ -46,7 +49,23 @@ def run_pipeline() -> None:
         base_url=config.MINIFLUX_URL,
         api_token=config.MINIFLUX_API_TOKEN,
     )
-    classifier = Classifier(settings=config)
+
+    llm_client: LLMClient
+    if config.LLM_PROVIDER == "opencodego":
+        llm_client = OpencodeGoClient(
+            api_key=config.OPENCODEGO_API_KEY,
+            model=config.OPENCODEGO_MODEL,
+            timeout=config.OPENCODEGO_TIMEOUT_SECONDS,
+        )
+        model_name = config.OPENCODEGO_MODEL
+    else:
+        llm_client = OpenRouterClient(
+            api_key=config.OPENROUTER_API_KEY,
+            model=config.OPENROUTER_MODEL,
+        )
+        model_name = config.OPENROUTER_MODEL
+
+    classifier = Classifier(client=llm_client, model=model_name)
     logger = JsonlLogger()
 
     # ── 4. Fetch unread articles ───────────────────────────────────────

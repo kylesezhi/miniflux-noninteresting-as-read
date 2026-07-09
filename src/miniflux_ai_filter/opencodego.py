@@ -13,16 +13,14 @@ from typing import Any
 
 import requests
 
+from miniflux_ai_filter.protocols import LLMError
+
 
 logger = logging.getLogger(__name__)
 
 
-class OpencodeGoError(Exception):
+class OpencodeGoError(LLMError):
     """Raised when the Opencode Go API call or response parsing fails."""
-
-    def __init__(self, message: str) -> None:
-        self.message = message
-        super().__init__(message)
 
 
 class OpencodeGoClient:

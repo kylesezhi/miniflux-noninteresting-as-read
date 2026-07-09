@@ -12,7 +12,10 @@ from typing import Any
 import requests
 
 
-class OpenRouterError(Exception):
+from miniflux_ai_filter.protocols import LLMError
+
+
+class OpenRouterError(LLMError):
     """Raised when the OpenRouter API call or response parsing fails."""
 
     def __init__(self, message: str) -> None:

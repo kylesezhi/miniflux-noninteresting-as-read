@@ -1,16 +1,15 @@
 """Article classifier that uses an LLM to determine interest.
 
 Owns the classification prompt and formatting logic, delegating the actual
-API call to a generic :class:`~miniflux_ai_filter.opencodego.OpencodeGoClient`.
+API call to any :class:`~miniflux_ai_filter.protocols.LLMClient` implementation.
 """
 
 from __future__ import annotations
 
 import json
 
-from miniflux_ai_filter.config import Settings
 from miniflux_ai_filter.models import Article, ClassificationResult
-from miniflux_ai_filter.opencodego import OpencodeGoClient, OpencodeGoError
+from miniflux_ai_filter.protocols import LLMClient, LLMError
 
 
 class ClassificationError(Exception):
@@ -22,12 +21,14 @@ class ClassificationError(Exception):
 
 
 class Classifier:
-    """Classifies articles using an LLM via Opencode Go.
+    """Classifies articles using an LLM via any :class:`LLMClient` implementation.
 
     Parameters
     ----------
-    settings:
-        Application settings used to configure the Opencode Go client.
+    client:
+        An :class:`LLMClient`-compatible chat completion client.
+    model:
+        Human-readable model identifier used for logging and audit trails.
     """
 
     # ── Prompt template ───────────────────────────────────────────────
@@ -46,13 +47,9 @@ class Classifier:
         "Uninteresting topics: cars, motorcycles, sports."
     )
 
-    def __init__(self, settings: Settings) -> None:
-        self._client = OpencodeGoClient(
-            api_key=settings.OPENCODEGO_API_KEY,
-            model=settings.OPENCODEGO_MODEL,
-            timeout=settings.OPENCODEGO_TIMEOUT_SECONDS,
-        )
-        self._model = settings.OPENCODEGO_MODEL
+    def __init__(self, client: LLMClient, model: str) -> None:
+        self._client = client
+        self._model = model
 
     @property
     def model(self) -> str:
@@ -87,7 +84,7 @@ class Classifier:
                 system_prompt=self.SYSTEM_PROMPT,
                 user_message=user_message,
             )
-        except OpencodeGoError as exc:
+        except LLMError as exc:
             raise ClassificationError(
                 f"LLM classification failed: {exc.message}"
             ) from exc
