@@ -294,6 +294,18 @@ pm2 stop miniflux-ai-filter
 pm2 restart miniflux-ai-filter
 ```
 
+#### Reload After Config Changes
+
+If you pull an updated `ecosystem.config.js` from the repository (or edit it locally), PM2 won't pick up the changes with a simple restart. You need to delete the old process and re-create it from the updated config:
+
+```bash
+pm2 delete miniflux-ai-filter
+pm2 start ecosystem.config.js
+pm2 save
+```
+
+The `pm2 delete` + `pm2 start` sequence guarantees the new `script` path, `interpreter_args`, cron schedule, and all other settings are loaded fresh. `pm2 restart miniflux-ai-filter` only restarts the existing process with its original definition and will **not** apply config changes.
+
 ### Log Rotation
 
 Two layers of log rotation are configured:
