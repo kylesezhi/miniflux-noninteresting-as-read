@@ -544,12 +544,6 @@ Tasks:
 - Set execution interval
 - Document deployment
 
-Future:
-
-- cron alternative
-- Docker container
-- Home server deployment
-
 Acceptance criteria:
-- Runs unattended
+- Configuration is complete
 - Failures are visible in logs
