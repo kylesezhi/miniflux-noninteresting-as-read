@@ -236,12 +236,145 @@ cat logs/classifier.jsonl | jq .
 
 ## Deployment
 
-For unattended execution, the project supports:
+### PM2 (Recommended)
 
-- **PM2** — Process manager with log rotation
-- **cron** — Scheduled execution via system cron
-- **Docker** — Containerized deployment (future)
-- **Home server** — Self-hosted deployment
+[PM2](https://pm2.keymetrics.io/) is a production process manager that can run the pipeline on a schedule, restart it if it fails, and manage log output.
+
+#### Install PM2
+
+```bash
+npm install -g pm2
+```
+
+#### Configure
+
+An `ecosystem.config.js` is provided at the project root. It runs the pipeline once per hour (on the hour) using `uv run python -m miniflux_ai_filter`.
+
+Key settings in the config:
+
+| Setting | Value | Description |
+|---|---|---|
+| `cron_restart` | `0 * * * *` | Runs every hour on the hour |
+| `autorestart` | `false` | Script exits after each run; cron handles rescheduling |
+| `error_file` | `logs/pm2/err.log` | PM2 stderr log |
+| `out_file` | `logs/pm2/out.log` | PM2 stdout log |
+
+#### Start the Process
+
+```bash
+cd /path/to/miniflux-noninteresting-as-read
+pm2 start ecosystem.config.js
+```
+
+#### Save Process List
+
+After starting, save the process list so PM2 can resurrect it on reboot:
+
+```bash
+pm2 save
+```
+
+#### Enable Startup Script
+
+Configure PM2 to automatically start on system boot:
+
+```bash
+pm2 startup
+```
+
+This prints a command you need to run with `sudo`. Follow the instructions.
+
+#### Check Status
+
+```bash
+pm2 status
+pm2 logs miniflux-ai-filter   # tail recent output
+pm2 logs miniflux-ai-filter --lines 100  # last 100 lines
+```
+
+#### Stop or Restart
+
+```bash
+pm2 stop miniflux-ai-filter
+pm2 restart miniflux-ai-filter
+```
+
+### Log Rotation
+
+Two layers of log rotation are configured:
+
+#### 1. PM2 Logs (stdout/stderr)
+
+Install and configure the `pm2-logrotate` module to manage PM2's own log files:
+
+```bash
+pm2 install pm2-logrotate
+pm2 set pm2-logrotate:max_size 10M
+pm2 set pm2-logrotate:retain 7
+pm2 set pm2-logrotate:compress true
+```
+
+#### 2. JSONL Audit Trail
+
+The project writes classification decisions to `logs/classifier.jsonl`. A system `logrotate` configuration is provided at `logrotate.d/miniflux-ai-filter`.
+
+Install it (adjust the path to match your deployment):
+
+```bash
+sudo cp logrotate.d/miniflux-ai-filter /etc/logrotate.d/
+```
+
+The config in the file rotates the JSONL log **daily** and retains **30 days** of history. It uses `copytruncate` so the pipeline can continue writing safely without needing a restart.
+
+### Customizing the Execution Interval
+
+To change how often the pipeline runs, edit the `cron_restart` value in `ecosystem.config.js` and restart PM2:
+
+```javascript
+cron_restart: "0 * * * *",   // every hour (default)
+cron_restart: "*/30 * * * *", // every 30 minutes
+cron_restart: "0 */6 * * *",  // every 6 hours
+```
+
+Then reload:
+
+```bash
+pm2 restart ecosystem.config.js
+```
+
+### Alternative: System Cron
+
+If you prefer not to use PM2, a simple cron entry works just as well:
+
+```cron
+# Run every hour
+0 * * * * cd /path/to/miniflux-noninteresting-as-read && uv run python -m miniflux_ai_filter >> logs/cron.log 2>&1
+```
+
+### Monitoring Failures
+
+- **PM2 logs**: `pm2 logs miniflux-ai-filter` shows stdout/stderr in real time
+- **JSONL audit log**: Errors are logged to `logs/classifier.jsonl` with `error_type` and `error_message` fields — inspect with `jq`:
+  ```bash
+  jq 'select(.error_type != null)' logs/classifier.jsonl
+  ```
+- **Exit codes**: The pipeline exits with a non-zero code on failure, which PM2 or cron will report
+
+### File Layout
+
+```
+miniflux-noninteresting-as-read/
+├── ecosystem.config.js           # PM2 process configuration
+├── logrotate.d/
+│   └── miniflux-ai-filter        # System logrotate config for JSONL audit trail
+├── logs/
+│   ├── .gitkeep
+│   ├── classifier.jsonl          # JSONL audit trail (rotated via logrotate)
+│   └── pm2/                      # PM2 stdout/stderr logs (rotated via pm2-logrotate)
+│       ├── err.log
+│       └── out.log
+└── src/...
+```
 
 ## License
 

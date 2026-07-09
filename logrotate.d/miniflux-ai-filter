@@ -1,0 +1,18 @@
+# System logrotate configuration for the miniflux-ai-filter JSONL audit trail.
+#
+# Install by copying/symlinking this file to /etc/logrotate.d/miniflux-ai-filter
+# and adjusting the path below to match the absolute project location.
+#
+# Example:
+#   sudo cp logrotate.d/miniflux-ai-filter /etc/logrotate.d/
+#
+# The JSONL log is rotated daily and retained for 30 days.
+# copytruncate is used so the running process can continue writing safely.
+
+/home/kyle/Dropbox/opensource/miniflux-noninteresting-as-read/logs/classifier.jsonl {
+    daily
+    rotate 30
+    compress
+    missingok
+    copytruncate
+}
