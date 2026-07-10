@@ -99,6 +99,7 @@ def run_pipeline() -> None:
             result = classifier.classify(article)
 
             if not result.interesting:
+                print(f"  Marking as read: {article.title}")
                 miniflux_client.mark_entry_read(entry.id)
                 marked_read += 1
 
