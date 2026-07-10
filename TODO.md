@@ -547,3 +547,98 @@ Tasks:
 Acceptance criteria:
 - Configuration is complete
 - Failures are visible in logs
+
+
+---
+
+## Milestone 11: Multi-Feed Support with Per-Feed Prompts
+
+Goal:
+Generalize the script to support multiple feeds, each with its own classification prompt. Same functionality for all feeds: if uninteresting, mark as read.
+
+### Design Decisions
+
+1. **Config format**: YAML file (`feeds.yaml`) for feed-to-prompt mapping
+   - Prompts are multi-line text with special characters — awkward in `.env`
+   - Easier to version control and edit
+   - Cleaner separation: secrets stay in `.env`, content config in a separate file
+
+2. **Config file location**: Project root (same level as `.env` and `pyproject.toml`)
+
+3. **Single source of truth**: `feeds.yaml` defines which feeds to process; remove `MINIFLUX_FEED_IDS` from `.env`
+
+4. **YAML schema**: Minimal — `feed_id`, `max_articles`, `prompt`
+   ```yaml
+   feeds:
+     - feed_id: 1
+       max_articles: 50
+       prompt: |
+         Your prompt here...
+     - feed_id: 5
+       max_articles: 30
+       prompt: |
+         Another prompt...
+   ```
+
+5. **Classifier architecture**: Pass `system_prompt` as a parameter to `classify()`. One stateless `Classifier` instance.
+
+6. **Feed lookup**: Skip articles with unknown `feed_id` and log a warning
+
+7. **Processing**: Per-feed article limit (not global)
+
+8. **Rate limiting**: Add `CLASSIFICATION_DELAY_SECONDS` to `.env` for rate limiting LLM calls (Miniflux is local, no delay needed)
+
+9. **Processing loop**: Process feeds sequentially, one at a time
+
+10. **Logging**: Add `prompt` field to `ClassificationLog` for audit trail
+
+11. **YAML config loading**: New `feeds_config.py` module (separation of concerns)
+
+12. **Dependency**: Add `pyyaml` to `pyproject.toml`
+
+13. **Tests**: Update existing tests for new signatures; add new tests for `feeds_config.py` and the new processing loop
+
+### Files to Create
+
+1. **`feeds.yaml`** (project root) — Feed definitions
+2. **`src/miniflux_ai_filter/feeds_config.py`** — Pydantic models + YAML loader
+3. **`tests/test_feeds_config.py`** — Tests for YAML loading/validation
+
+### Files to Modify
+
+1. **`config.py`** — Remove `MINIFLUX_FEED_IDS` and `feed_ids`; add `CLASSIFICATION_DELAY_SECONDS`
+2. **`classifier.py`** — Remove hardcoded `SYSTEM_PROMPT`; add `system_prompt` parameter to `classify()`
+3. **`models.py`** — Add `prompt` field to `ClassificationLog`
+4. **`main.py`** — Rewrite processing loop: sequential per-feed, use `FeedsConfig`, add delay between LLM calls
+5. **`miniflux.py`** — `get_unread_entries()` takes single feed_id (simplify)
+6. **`jsonl_logger.py`** — Pass `prompt` to `log_classification()`
+7. **`.env.example`** — Remove `MINIFLUX_FEED_IDS`, add `CLASSIFICATION_DELAY_SECONDS`
+8. **`pyproject.toml`** — Add `pyyaml` dependency
+9. **`tests/`** — Update existing tests for new signatures
+
+### Processing Flow
+
+```
+Load Settings (.env)
+Load FeedsConfig (feeds.yaml)
+For each feed in feeds.yaml:
+  Fetch unread articles for that feed
+  Sort newest first
+  Limit to feed's max_articles
+  For each article:
+    Classify with feed's prompt
+    If uninteresting → mark as read
+    Log classification (including prompt)
+    Sleep CLASSIFICATION_DELAY_SECONDS
+Print summary
+```
+
+### Acceptance Criteria
+
+- Each feed uses its own prompt for classification
+- Per-feed article limits are respected
+- Rate limiting delay is configurable
+- Unknown feed IDs are skipped with a warning
+- JSONL logs include the prompt used for each classification
+- All existing tests pass with updated signatures
+- New tests cover YAML config loading and per-feed processing
