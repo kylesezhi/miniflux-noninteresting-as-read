@@ -551,10 +551,10 @@ Acceptance criteria:
 
 ---
 
-## Milestone 11: Multi-Feed Support with Per-Feed Prompts
+## Milestone 11: YAML Feed Configuration
 
 Goal:
-Generalize the script to support multiple feeds, each with its own classification prompt. Same functionality for all feeds: if uninteresting, mark as read.
+Replace `MINIFLUX_FEED_IDS` env var with a YAML config file for feed definitions.
 
 ### Design Decisions
 
@@ -580,65 +580,78 @@ Generalize the script to support multiple feeds, each with its own classificatio
          Another prompt...
    ```
 
-5. **Classifier architecture**: Pass `system_prompt` as a parameter to `classify()`. One stateless `Classifier` instance.
+5. **YAML config loading**: New `feeds_config.py` module (separation of concerns)
 
-6. **Feed lookup**: Skip articles with unknown `feed_id` and log a warning
+6. **Dependency**: Add `pyyaml` to `pyproject.toml`
 
-7. **Processing**: Per-feed article limit (not global)
+Tasks:
+- Create `feeds_config.py` with `FeedConfig` and `FeedsConfig` Pydantic models
+- Add YAML loading with validation
+- Create example `feeds.yaml`
+- Add `pyyaml` to `pyproject.toml`
+- Remove `MINIFLUX_FEED_IDS` from `config.py` and `.env.example`
+- Add tests for `feeds_config.py`
 
-8. **Rate limiting**: Add `CLASSIFICATION_DELAY_SECONDS` to `.env` for rate limiting LLM calls (Miniflux is local, no delay needed)
+Acceptance criteria:
+- `FeedsConfig.load()` parses and validates `feeds.yaml`
+- Missing/invalid file fails with clear error
 
-9. **Processing loop**: Process feeds sequentially, one at a time
 
-10. **Logging**: Add `prompt` field to `ClassificationLog` for audit trail
+---
 
-11. **YAML config loading**: New `feeds_config.py` module (separation of concerns)
+## Milestone 12: Per-Feed Classification Prompts
 
-12. **Dependency**: Add `pyyaml` to `pyproject.toml`
+Goal:
+Allow each feed to have its own classification prompt.
 
-13. **Tests**: Update existing tests for new signatures; add new tests for `feeds_config.py` and the new processing loop
+Tasks:
+- Remove hardcoded `SYSTEM_PROMPT` from `classifier.py`
+- Add `system_prompt` parameter to `classify()` method
+- Add `prompt` field to `ClassificationLog` model
+- Update `jsonl_logger.py` to accept and log prompt
+- Update existing classifier tests
 
-### Files to Create
+Acceptance criteria:
+- `Classifier` is stateless regarding prompts
+- Each classification logs which prompt was used
 
-1. **`feeds.yaml`** (project root) — Feed definitions
-2. **`src/miniflux_ai_filter/feeds_config.py`** — Pydantic models + YAML loader
-3. **`tests/test_feeds_config.py`** — Tests for YAML loading/validation
 
-### Files to Modify
+---
 
-1. **`config.py`** — Remove `MINIFLUX_FEED_IDS` and `feed_ids`; add `CLASSIFICATION_DELAY_SECONDS`
-2. **`classifier.py`** — Remove hardcoded `SYSTEM_PROMPT`; add `system_prompt` parameter to `classify()`
-3. **`models.py`** — Add `prompt` field to `ClassificationLog`
-4. **`main.py`** — Rewrite processing loop: sequential per-feed, use `FeedsConfig`, add delay between LLM calls
-5. **`miniflux.py`** — `get_unread_entries()` takes single feed_id (simplify)
-6. **`jsonl_logger.py`** — Pass `prompt` to `log_classification()`
-7. **`.env.example`** — Remove `MINIFLUX_FEED_IDS`, add `CLASSIFICATION_DELAY_SECONDS`
-8. **`pyproject.toml`** — Add `pyyaml` dependency
-9. **`tests/`** — Update existing tests for new signatures
+## Milestone 13: Per-Feed Processing Loop
 
-### Processing Flow
+Goal:
+Rewrite the orchestration to process feeds sequentially with per-feed limits.
 
-```
-Load Settings (.env)
-Load FeedsConfig (feeds.yaml)
-For each feed in feeds.yaml:
-  Fetch unread articles for that feed
-  Sort newest first
-  Limit to feed's max_articles
-  For each article:
-    Classify with feed's prompt
-    If uninteresting → mark as read
-    Log classification (including prompt)
-    Sleep CLASSIFICATION_DELAY_SECONDS
-Print summary
-```
+Tasks:
+- Rewrite `main.py` to iterate over `FeedsConfig.feeds`
+- Simplify `miniflux.py` `get_unread_entries()` to single feed_id
+- Apply per-feed `max_articles` limit
+- Add `CLASSIFICATION_DELAY_SECONDS` to `config.py` and `.env.example`
+- Add `time.sleep()` between LLM calls
+- Skip articles with unknown feed_id (log warning)
+- Update summary output to show per-feed stats
 
-### Acceptance Criteria
+Acceptance criteria:
+- Each feed processed independently
+- Rate limiting works
+- Unknown feeds are skipped gracefully
 
-- Each feed uses its own prompt for classification
-- Per-feed article limits are respected
-- Rate limiting delay is configurable
-- Unknown feed IDs are skipped with a warning
-- JSONL logs include the prompt used for each classification
-- All existing tests pass with updated signatures
-- New tests cover YAML config loading and per-feed processing
+
+---
+
+## Milestone 14: Integration Testing
+
+Goal:
+Validate the multi-feed system end-to-end.
+
+Tasks:
+- Update `conftest.py` fixtures for new config structure
+- Add integration test with multiple feeds
+- Verify JSONL logs include prompt field
+- Test missing feed_id handling
+- Run full pipeline manually
+
+Acceptance criteria:
+- All tests pass
+- Manual run with 2+ feeds works correctly
