@@ -1,0 +1,24 @@
+# Feed configuration for miniflux-noninteresting-as-read
+#
+# Each feed entry defines:
+#   - feed_id:      The numeric Miniflux feed ID
+#   - max_articles: Maximum articles to process per run (optional, defaults to 100)
+#   - prompt:       The classification system prompt for this feed
+
+feeds:
+  - feed_id: 3
+    max_articles: 100
+    prompt: |
+      You are a content classifier. Given an article's details,
+      determine whether it is interesting or not.
+      Respond with a JSON object containing exactly two fields:
+        "interesting": true or false
+        "reason": a short explanation for your decision
+
+      Rules:
+      - Only filter when the primary topic is unwanted.
+      - Do not filter incidental mentions of unwanted topics.
+
+      Interested topics: programming, AI, science, cybersecurity,
+      space, technology, engineering, general interesting news.
+      Uninteresting topics: cars, motorcycles, sports.

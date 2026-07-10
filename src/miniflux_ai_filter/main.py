@@ -18,6 +18,7 @@ import uuid
 
 from miniflux_ai_filter.classifier import Classifier, ClassificationError
 from miniflux_ai_filter.config import Settings
+from miniflux_ai_filter.feeds_config import FeedsConfig
 from miniflux_ai_filter.jsonl_logger import JsonlLogger
 from miniflux_ai_filter.miniflux import MinifluxClient, MinifluxError
 from miniflux_ai_filter.models import Article
@@ -68,9 +69,11 @@ def run_pipeline() -> None:
     classifier = Classifier(client=llm_client, model=model_name)
     logger = JsonlLogger()
 
-    # ── 4. Fetch unread articles ───────────────────────────────────────
-    print(f"Fetching unread articles for feed IDs: {config.feed_ids}")
-    articles = miniflux_client.get_unread_entries(config.feed_ids)
+    # ── 4. Load feeds config ───────────────────────────────────────────
+    feeds_config = FeedsConfig.load()
+    feed_ids = [f.feed_id for f in feeds_config.feeds]
+    print(f"Fetching unread articles for feed IDs: {feed_ids}")
+    articles = miniflux_client.get_unread_entries(feed_ids)
     print(f"  Found {len(articles)} unread articles")
 
     # ── 5. Sort newest first ───────────────────────────────────────────

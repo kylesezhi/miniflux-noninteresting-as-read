@@ -20,7 +20,6 @@ from miniflux_ai_filter.protocols import LLMClient, LLMError
 _CONFIG_ENV_VARS = [
     "MINIFLUX_URL",
     "MINIFLUX_API_TOKEN",
-    "MINIFLUX_FEED_IDS",
     "OPENROUTER_API_KEY",
     "OPENCODEGO_API_KEY",
     "LLM_PROVIDER",

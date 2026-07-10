@@ -4,9 +4,7 @@ Loads runtime configuration from environment variables (via .env file)
 and provides a validated, typed configuration object.
 """
 
-from typing import List
-
-from pydantic import Field, model_validator
+from pydantic import Field
 from pydantic_settings import BaseSettings
 from dotenv import load_dotenv
 
@@ -29,10 +27,6 @@ class Settings(BaseSettings):
     MINIFLUX_API_TOKEN: str = Field(
         ...,
         description="Miniflux API token",
-    )
-    MINIFLUX_FEED_IDS: str = Field(
-        ...,
-        description="Comma-separated list of feed IDs (e.g. '1,2,3')",
     )
     OPENROUTER_API_KEY: str = Field(
         ...,
@@ -66,22 +60,5 @@ class Settings(BaseSettings):
         default="openrouter",
         description="LLM provider to use (openrouter or opencodego)",
     )
-
-    # ── Computed fields (populated after init) ────────────────────────
-    feed_ids: List[int] = Field(default=[], exclude=True)
-
-    @model_validator(mode="after")
-    def _parse_feed_ids(self) -> "Settings":
-        raw = self.MINIFLUX_FEED_IDS
-        parts = [p.strip() for p in raw.split(",") if p.strip()]
-        if not parts:
-            raise ValueError("MINIFLUX_FEED_IDS must contain at least one feed ID")
-        try:
-            self.feed_ids = [int(p) for p in parts]
-        except ValueError as exc:
-            raise ValueError(
-                f"MINIFLUX_FEED_IDS contains non-numeric values: {exc}"
-            ) from exc
-        return self
 
     model_config = {"env_file": ".env", "extra": "ignore"}

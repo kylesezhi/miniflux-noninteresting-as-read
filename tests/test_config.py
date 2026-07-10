@@ -9,60 +9,6 @@ from pydantic import ValidationError
 from miniflux_ai_filter.config import Settings
 
 
-class TestFeedIds:
-    """Tests for feed ID parsing from MINIFLUX_FEED_IDS."""
-
-    def test_parses_comma_separated(self) -> None:
-        settings = Settings(
-            _env_file=None,  # type: ignore[call-arg]
-            MINIFLUX_URL="https://reader.example.com",
-            MINIFLUX_API_TOKEN="token",
-            MINIFLUX_FEED_IDS="1,2,3",
-            OPENROUTER_API_KEY="key",
-        )
-        assert settings.feed_ids == [1, 2, 3]
-
-    def test_parses_single_value(self) -> None:
-        settings = Settings(
-            _env_file=None,  # type: ignore[call-arg]
-            MINIFLUX_URL="https://reader.example.com",
-            MINIFLUX_API_TOKEN="token",
-            MINIFLUX_FEED_IDS="42",
-            OPENROUTER_API_KEY="key",
-        )
-        assert settings.feed_ids == [42]
-
-    def test_handles_whitespace(self) -> None:
-        settings = Settings(
-            _env_file=None,  # type: ignore[call-arg]
-            MINIFLUX_URL="https://reader.example.com",
-            MINIFLUX_API_TOKEN="token",
-            MINIFLUX_FEED_IDS=" 1 , 2 , 3 ",
-            OPENROUTER_API_KEY="key",
-        )
-        assert settings.feed_ids == [1, 2, 3]
-
-    def test_empty_string_raises(self) -> None:
-        with pytest.raises(ValidationError, match="at least one feed ID"):
-            Settings(
-                _env_file=None,  # type: ignore[call-arg]
-                MINIFLUX_URL="https://reader.example.com",
-                MINIFLUX_API_TOKEN="token",
-                MINIFLUX_FEED_IDS="",
-                OPENROUTER_API_KEY="key",
-            )
-
-    def test_non_numeric_raises(self) -> None:
-        with pytest.raises(ValidationError, match="non-numeric"):
-            Settings(
-                _env_file=None,  # type: ignore[call-arg]
-                MINIFLUX_URL="https://reader.example.com",
-                MINIFLUX_API_TOKEN="token",
-                MINIFLUX_FEED_IDS="1,abc,3",
-                OPENROUTER_API_KEY="key",
-            )
-
-
 class TestRequiredFields:
     """Tests that required fields produce clear errors."""
 
@@ -71,7 +17,6 @@ class TestRequiredFields:
             Settings(
                 _env_file=None,  # type: ignore[call-arg]
                 MINIFLUX_API_TOKEN="token",
-                MINIFLUX_FEED_IDS="1",
                 OPENROUTER_API_KEY="key",
             )
 
@@ -80,16 +25,6 @@ class TestRequiredFields:
             Settings(
                 _env_file=None,  # type: ignore[call-arg]
                 MINIFLUX_URL="https://reader.example.com",
-                MINIFLUX_FEED_IDS="1",
-                OPENROUTER_API_KEY="key",
-            )
-
-    def test_missing_feed_ids(self) -> None:
-        with pytest.raises(ValidationError, match="MINIFLUX_FEED_IDS"):
-            Settings(
-                _env_file=None,  # type: ignore[call-arg]
-                MINIFLUX_URL="https://reader.example.com",
-                MINIFLUX_API_TOKEN="token",
                 OPENROUTER_API_KEY="key",
             )
 
@@ -99,7 +34,6 @@ class TestRequiredFields:
                 _env_file=None,  # type: ignore[call-arg]
                 MINIFLUX_URL="https://reader.example.com",
                 MINIFLUX_API_TOKEN="token",
-                MINIFLUX_FEED_IDS="1",
             )
 
 
@@ -111,7 +45,6 @@ class TestDefaults:
             _env_file=None,  # type: ignore[call-arg]
             MINIFLUX_URL="https://reader.example.com",
             MINIFLUX_API_TOKEN="token",
-            MINIFLUX_FEED_IDS="1",
             OPENROUTER_API_KEY="key",
         )
         assert settings.LLM_PROVIDER == "openrouter"
@@ -121,7 +54,6 @@ class TestDefaults:
             _env_file=None,  # type: ignore[call-arg]
             MINIFLUX_URL="https://reader.example.com",
             MINIFLUX_API_TOKEN="token",
-            MINIFLUX_FEED_IDS="1",
             OPENROUTER_API_KEY="key",
         )
         assert settings.MAX_ARTICLES_PER_RUN == 100
@@ -131,7 +63,6 @@ class TestDefaults:
             _env_file=None,  # type: ignore[call-arg]
             MINIFLUX_URL="https://reader.example.com",
             MINIFLUX_API_TOKEN="token",
-            MINIFLUX_FEED_IDS="1",
             OPENROUTER_API_KEY="key",
         )
         assert settings.OPENCODEGO_API_KEY == ""
@@ -141,7 +72,6 @@ class TestDefaults:
             _env_file=None,  # type: ignore[call-arg]
             MINIFLUX_URL="https://reader.example.com",
             MINIFLUX_API_TOKEN="token",
-            MINIFLUX_FEED_IDS="1",
             OPENROUTER_API_KEY="key",
         )
         assert settings.OPENCODEGO_MODEL == "deepseek-v4-flash"
@@ -151,7 +81,6 @@ class TestDefaults:
             _env_file=None,  # type: ignore[call-arg]
             MINIFLUX_URL="https://reader.example.com",
             MINIFLUX_API_TOKEN="token",
-            MINIFLUX_FEED_IDS="1",
             OPENROUTER_API_KEY="key",
         )
         assert settings.OPENCODEGO_TIMEOUT_SECONDS == 60
@@ -167,7 +96,6 @@ class TestProviderConfig:
             _env_file=None,  # type: ignore[call-arg]
             MINIFLUX_URL="https://reader.example.com",
             MINIFLUX_API_TOKEN="token",
-            MINIFLUX_FEED_IDS="1",
             OPENROUTER_API_KEY="key",
             OPENCODEGO_API_KEY="",
             LLM_PROVIDER="opencodego",
