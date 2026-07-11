@@ -43,6 +43,7 @@ class JsonlLogger:
         reason: str,
         run_id: str,
         model: str,
+        prompt: str,
     ) -> None:
         """Record a single classification result as a JSONL entry.
 
@@ -58,6 +59,8 @@ class JsonlLogger:
             Unique identifier for this pipeline run.
         model:
             OpenRouter model identifier used for classification.
+        prompt:
+            Classification system prompt used.
         """
         entry = ClassificationLog(
             run_id=run_id,
@@ -70,6 +73,7 @@ class JsonlLogger:
             interesting=interesting,
             reason=reason,
             model=model,
+            prompt=prompt,
         )
         self._write_line(entry.model_dump())
 

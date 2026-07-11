@@ -31,22 +31,6 @@ class Classifier:
         Human-readable model identifier used for logging and audit trails.
     """
 
-    # ── Prompt template ───────────────────────────────────────────────
-
-    SYSTEM_PROMPT = (
-        "You are a content classifier. Given an article's details, "
-        "determine whether it is interesting or not. "
-        "Respond with a JSON object containing exactly two fields:\n"
-        '  "interesting": true or false\n'
-        '  "reason": a short explanation for your decision\n\n'
-        "Rules:\n"
-        "- Only filter when the primary topic is unwanted.\n"
-        "- Do not filter incidental mentions of unwanted topics.\n\n"
-        "Interested topics: programming, AI, science, cybersecurity, "
-        "space, technology, engineering, general interesting news.\n"
-        "Uninteresting topics: cars, motorcycles, sports."
-    )
-
     def __init__(self, client: LLMClient, model: str) -> None:
         self._client = client
         self._model = model
@@ -58,13 +42,17 @@ class Classifier:
 
     # ── Public API ────────────────────────────────────────────────────
 
-    def classify(self, article: Article) -> ClassificationResult:
+    def classify(
+        self, article: Article, system_prompt: str
+    ) -> ClassificationResult:
         """Classify a single article as interesting or not.
 
         Parameters
         ----------
         article:
             The article to classify.
+        system_prompt:
+            The system prompt to use for classification.
 
         Returns
         -------
@@ -81,7 +69,7 @@ class Classifier:
 
         try:
             raw_content = self._client.send_message(
-                system_prompt=self.SYSTEM_PROMPT,
+                system_prompt=system_prompt,
                 user_message=user_message,
             )
         except LLMError as exc:

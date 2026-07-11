@@ -72,6 +72,7 @@ def run_pipeline() -> None:
     # ── 4. Load feeds config ───────────────────────────────────────────
     feeds_config = FeedsConfig.load()
     feed_ids = [f.feed_id for f in feeds_config.feeds]
+    prompt_map = {f.feed_id: f.prompt for f in feeds_config.feeds}
     print(f"Fetching unread articles for feed IDs: {feed_ids}")
     articles = miniflux_client.get_unread_entries(feed_ids)
     print(f"  Found {len(articles)} unread articles")
@@ -98,8 +99,13 @@ def run_pipeline() -> None:
             content=entry.content,
         )
 
+        prompt = prompt_map.get(
+            entry.feed_id,
+            "You are a content classifier. Determine whether the given article is interesting.",
+        )
+
         try:
-            result = classifier.classify(article)
+            result = classifier.classify(article, system_prompt=prompt)
 
             if not result.interesting:
                 print(f"  Marking as read: {article.title}")
@@ -112,6 +118,7 @@ def run_pipeline() -> None:
                 reason=result.reason,
                 run_id=run_id,
                 model=classifier.model,
+                prompt=prompt,
             )
 
         except (ClassificationError, MinifluxError) as exc:

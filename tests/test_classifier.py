@@ -126,7 +126,7 @@ class TestClassifier:
 
     def test_classify_interesting(self, mock_llm_client, sample_article) -> None:
         classifier = Classifier(client=mock_llm_client, model="test-model")
-        result = classifier.classify(sample_article)
+        result = classifier.classify(sample_article, system_prompt="Test prompt.")
 
         assert result.interesting is True
         assert result.reason == "Interesting topic."
@@ -138,33 +138,29 @@ class TestClassifier:
         classifier = Classifier(
             client=mock_llm_client_not_interesting, model="test-model"
         )
-        result = classifier.classify(sample_article)
+        result = classifier.classify(sample_article, system_prompt="Test prompt.")
         assert result.interesting is False
         assert result.reason == "Uninteresting primary topic."
 
     def test_classify_llm_error(self, mock_llm_client_failure, sample_article) -> None:
         classifier = Classifier(client=mock_llm_client_failure, model="test-model")
         with pytest.raises(ClassificationError, match="LLM classification failed"):
-            classifier.classify(sample_article)
+            classifier.classify(sample_article, system_prompt="Test prompt.")
 
     def test_classify_sends_correct_prompt(
         self, mock_llm_client, sample_article
     ) -> None:
         classifier = Classifier(client=mock_llm_client, model="test-model")
-        classifier.classify(sample_article)
+        classifier.classify(
+            sample_article,
+            system_prompt="You are a classifier. Interested topics: programming.",
+        )
 
         call_args = mock_llm_client.send_message.call_args
         assert call_args is not None
         kwargs = call_args[1]
-        assert "system_prompt" in kwargs
+        assert kwargs["system_prompt"] == "You are a classifier. Interested topics: programming."
         assert "user_message" in kwargs
-
-        # Check system prompt contains key instructions
-        system_prompt = kwargs["system_prompt"]
-        assert "Interested topics" in system_prompt
-        assert "Uninteresting topics" in system_prompt
-        assert "cars" in system_prompt
-        assert "sports" in system_prompt
 
         # Check user message contains article details
         user_message = kwargs["user_message"]
@@ -181,7 +177,7 @@ class TestClassifier:
         classifier = Classifier(
             client=mock_llm_client_not_interesting, model="test-model"
         )
-        result = classifier.classify(article_car_news)
+        result = classifier.classify(article_car_news, system_prompt="Test prompt.")
         assert result.interesting is False
 
     def test_motogp_article_classified_as_not_interesting(
@@ -190,7 +186,7 @@ class TestClassifier:
         classifier = Classifier(
             client=mock_llm_client_not_interesting, model="test-model"
         )
-        result = classifier.classify(article_motogp)
+        result = classifier.classify(article_motogp, system_prompt="Test prompt.")
         assert result.interesting is False
 
     def test_nfl_article_classified_as_not_interesting(
@@ -199,26 +195,26 @@ class TestClassifier:
         classifier = Classifier(
             client=mock_llm_client_not_interesting, model="test-model"
         )
-        result = classifier.classify(article_nfl)
+        result = classifier.classify(article_nfl, system_prompt="Test prompt.")
         assert result.interesting is False
 
     def test_ai_robot_article_classified_as_interesting(
         self, mock_llm_client, article_ai_robot
     ) -> None:
         classifier = Classifier(client=mock_llm_client, model="test-model")
-        result = classifier.classify(article_ai_robot)
+        result = classifier.classify(article_ai_robot, system_prompt="Test prompt.")
         assert result.interesting is True
 
     def test_nasa_article_classified_as_interesting(
         self, mock_llm_client, article_nasa
     ) -> None:
         classifier = Classifier(client=mock_llm_client, model="test-model")
-        result = classifier.classify(article_nasa)
+        result = classifier.classify(article_nasa, system_prompt="Test prompt.")
         assert result.interesting is True
 
     def test_linux_article_classified_as_interesting(
         self, mock_llm_client, article_linux
     ) -> None:
         classifier = Classifier(client=mock_llm_client, model="test-model")
-        result = classifier.classify(article_linux)
+        result = classifier.classify(article_linux, system_prompt="Test prompt.")
         assert result.interesting is True

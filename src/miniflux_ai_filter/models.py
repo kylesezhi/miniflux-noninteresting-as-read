@@ -63,3 +63,4 @@ class ClassificationLog(BaseModel):
     interesting: bool = Field(..., description="Classification result")
     reason: str = Field(..., description="Classification explanation")
     model: str = Field(..., description="OpenRouter model identifier used")
+    prompt: str = Field(..., description="Classification system prompt used")

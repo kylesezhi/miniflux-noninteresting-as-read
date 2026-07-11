@@ -21,6 +21,7 @@ class TestLogClassification:
             reason="AI and programming topic.",
             run_id="abc123",
             model="test-model",
+            prompt="Test classification prompt.",
         )
 
         lines = log_path.read_text(encoding="utf-8").strip().splitlines()
@@ -36,6 +37,7 @@ class TestLogClassification:
         assert entry["interesting"] is True
         assert entry["reason"] == "AI and programming topic."
         assert entry["model"] == "test-model"
+        assert entry["prompt"] == "Test classification prompt."
         assert "timestamp" in entry
 
     def test_writes_multiple_entries(self, tmp_path, sample_article: Article) -> None:
@@ -48,6 +50,7 @@ class TestLogClassification:
             reason="Reason 1",
             run_id="run1",
             model="model1",
+            prompt="Prompt 1",
         )
         logger.log_classification(
             article=sample_article,
@@ -55,6 +58,7 @@ class TestLogClassification:
             reason="Reason 2",
             run_id="run2",
             model="model2",
+            prompt="Prompt 2",
         )
 
         lines = log_path.read_text(encoding="utf-8").strip().splitlines()
@@ -79,6 +83,7 @@ class TestLogClassification:
             reason="Test.",
             run_id="abc",
             model="m",
+            prompt="Prompt.",
         )
 
         assert nested_path.exists()
@@ -135,6 +140,7 @@ class TestLogError:
             reason="Good.",
             run_id="run1",
             model="m",
+            prompt="Prompt.",
         )
         logger.log_error(
             run_id="run1",
