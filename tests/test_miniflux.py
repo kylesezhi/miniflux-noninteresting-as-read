@@ -47,7 +47,7 @@ class TestMinifluxEntry:
 class TestGetUnreadEntries:
     """Tests for ``MinifluxClient.get_unread_entries``."""
 
-    def test_fetches_multiple_feeds(self) -> None:
+    def test_fetches_single_feed(self) -> None:
         client = MinifluxClient(
             base_url="https://reader.example.com",
             api_token="test-token",
@@ -79,15 +79,15 @@ class TestGetUnreadEntries:
         }
 
         with patch("requests.get", return_value=mock_response) as mock_get:
-            entries = client.get_unread_entries([1, 2])
+            entries = client.get_unread_entries(1)
 
-        assert len(entries) == 4  # 2 per feed × 2 feeds
-        assert mock_get.call_count == 2
+        assert len(entries) == 2
+        assert mock_get.call_count == 1
 
         # Verify request parameters
-        call_args = mock_get.call_args_list[0]
+        call_args = mock_get.call_args
         kwargs = call_args[1]
-        assert kwargs["params"]["feed_id"] in [1, 2]
+        assert kwargs["params"]["feed_id"] == 1
         assert kwargs["params"]["status"] == "unread"
         assert kwargs["params"]["limit"] == 100
 
@@ -104,7 +104,7 @@ class TestGetUnreadEntries:
 
         with patch("requests.get", return_value=mock_response):
             with pytest.raises(MinifluxError, match="500"):
-                client.get_unread_entries([1])
+                client.get_unread_entries(1)
 
 
 class TestMarkEntryRead:

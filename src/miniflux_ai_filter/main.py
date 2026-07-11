@@ -4,16 +4,21 @@ Flow
 ----
 1. Load configuration
 2. Generate a unique run ID
-3. Fetch unread articles from Miniflux
-4. Sort newest first
-5. Limit to ``MAX_ARTICLES_PER_RUN``
-6. Classify each article via the LLM
-7. Mark uninteresting articles as read on the Miniflux server
-8. Write every classification decision (and any errors) to the JSONL audit log
+3. Load per-feed configuration from ``feeds.yaml``
+4. For each configured feed:
+   a. Fetch unread articles from Miniflux
+   b. Sort newest first
+   c. Limit to the feed's ``max_articles``
+   d. Classify each article via the LLM
+   e. Mark uninteresting articles as read on the Miniflux server
+   f. Pause between LLM calls to respect rate limits
+5. Write every classification decision (and any errors) to the JSONL audit log
+6. Print per-feed and aggregate summary
 """
 
 from __future__ import annotations
 
+import time
 import uuid
 
 from miniflux_ai_filter.classifier import Classifier, ClassificationError
@@ -34,10 +39,11 @@ def run_pipeline() -> None:
     configuration, the Miniflux API client, the classifier, and the JSONL
     logger into a single run that:
 
-    - Fetches unread articles from the configured feeds
-    - Classifies each with the LLM
+    - Fetches unread articles from each configured feed independently
+    - Classifies each with the LLM (with rate-limit delays between calls)
     - Marks uninteresting articles as read on Miniflux
     - Logs every decision (and any errors) to ``logs/classifier.jsonl``
+    - Reports per-feed and aggregate statistics
     """
     # ── 1. Load configuration ──────────────────────────────────────────
     config = Settings()
@@ -71,69 +77,91 @@ def run_pipeline() -> None:
 
     # ── 4. Load feeds config ───────────────────────────────────────────
     feeds_config = FeedsConfig.load()
-    feed_ids = [f.feed_id for f in feeds_config.feeds]
-    prompt_map = {f.feed_id: f.prompt for f in feeds_config.feeds}
-    print(f"Fetching unread articles for feed IDs: {feed_ids}")
-    articles = miniflux_client.get_unread_entries(feed_ids)
-    print(f"  Found {len(articles)} unread articles")
 
-    # ── 5. Sort newest first ───────────────────────────────────────────
-    articles.sort(key=lambda e: e.published_at, reverse=True)
+    # ── 5. Process each feed independently ─────────────────────────────
+    total_processed = 0
+    total_marked_read = 0
+    total_errors = 0
 
-    # ── 6. Limit to MAX_ARTICLES_PER_RUN ───────────────────────────────
-    articles = articles[: config.MAX_ARTICLES_PER_RUN]
-    print(f"  Processing up to {len(articles)} articles")
+    for feed_cfg in feeds_config.feeds:
+        feed_id = feed_cfg.feed_id
+        print(f"\nFeed {feed_id}: fetching unread articles ...")
+        raw_entries = miniflux_client.get_unread_entries(feed_id)
 
-    # ── 7. Process each article ────────────────────────────────────────
-    marked_read = 0
-    errors = 0
+        if not raw_entries:
+            print(f"  No unread articles for feed {feed_id}")
+            continue
 
-    for entry in articles:
-        article = Article(
-            id=entry.id,
-            feed_id=entry.feed_id,
-            title=entry.title,
-            url=entry.url,
-            published_at=entry.published_at,
-            summary=entry.summary,
-            content=entry.content,
+        raw_entries.sort(key=lambda e: e.published_at, reverse=True)
+
+        raw_entries = raw_entries[: feed_cfg.max_articles]
+        print(
+            f"  Found {len(raw_entries)} unread articles "
+            f"(limit: {feed_cfg.max_articles})"
         )
 
-        prompt = prompt_map.get(
-            entry.feed_id,
-            "You are a content classifier. Determine whether the given article is interesting.",
+        feed_processed = 0
+        feed_marked_read = 0
+        feed_errors = 0
+
+        for i, entry in enumerate(raw_entries):
+            article = Article(
+                id=entry.id,
+                feed_id=entry.feed_id,
+                title=entry.title,
+                url=entry.url,
+                published_at=entry.published_at,
+                summary=entry.summary,
+                content=entry.content,
+            )
+
+            try:
+                result = classifier.classify(
+                    article, system_prompt=feed_cfg.prompt
+                )
+
+                if not result.interesting:
+                    print(f"  Marking as read: {article.title}")
+                    miniflux_client.mark_entry_read(entry.id)
+                    feed_marked_read += 1
+
+                logger.log_classification(
+                    article=article,
+                    interesting=result.interesting,
+                    reason=result.reason,
+                    run_id=run_id,
+                    model=classifier.model,
+                    prompt=feed_cfg.prompt,
+                )
+                feed_processed += 1
+
+            except (ClassificationError, MinifluxError) as exc:
+                feed_errors += 1
+                logger.log_error(
+                    run_id=run_id,
+                    error_type=type(exc).__name__,
+                    error_message=str(exc),
+                    article_id=entry.id,
+                )
+                print(f"  ERROR processing article {entry.id}: {exc}")
+
+            # Rate limiting: sleep between LLM calls
+            if i < len(raw_entries) - 1:
+                time.sleep(config.CLASSIFICATION_DELAY_SECONDS)
+
+        print(
+            f"  Feed {feed_id} done — "
+            f"processed: {feed_processed}, "
+            f"marked read: {feed_marked_read}, "
+            f"errors: {feed_errors}"
         )
 
-        try:
-            result = classifier.classify(article, system_prompt=prompt)
+        total_processed += feed_processed
+        total_marked_read += feed_marked_read
+        total_errors += feed_errors
 
-            if not result.interesting:
-                print(f"  Marking as read: {article.title}")
-                miniflux_client.mark_entry_read(entry.id)
-                marked_read += 1
-
-            logger.log_classification(
-                article=article,
-                interesting=result.interesting,
-                reason=result.reason,
-                run_id=run_id,
-                model=classifier.model,
-                prompt=prompt,
-            )
-
-        except (ClassificationError, MinifluxError) as exc:
-            errors += 1
-            logger.log_error(
-                run_id=run_id,
-                error_type=type(exc).__name__,
-                error_message=str(exc),
-                article_id=entry.id,
-            )
-            print(f"  ERROR processing article {entry.id}: {exc}")
-
-    # ── 8. Summary ─────────────────────────────────────────────────────
-    processed = len(articles)
+    # ── 6. Aggregate summary ───────────────────────────────────────────
     print(f"\nRun {run_id} complete:")
-    print(f"  Processed: {processed}")
-    print(f"  Marked read: {marked_read}")
-    print(f"  Errors: {errors}")
+    print(f"  Total processed: {total_processed}")
+    print(f"  Total marked read: {total_marked_read}")
+    print(f"  Total errors: {total_errors}")

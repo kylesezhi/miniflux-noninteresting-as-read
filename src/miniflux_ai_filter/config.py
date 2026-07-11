@@ -60,5 +60,10 @@ class Settings(BaseSettings):
         default="openrouter",
         description="LLM provider to use (openrouter or opencodego)",
     )
+    CLASSIFICATION_DELAY_SECONDS: int = Field(
+        default=2,
+        ge=1,
+        description="Delay in seconds between LLM classification calls to avoid rate limiting",
+    )
 
     model_config = {"env_file": ".env", "extra": "ignore"}

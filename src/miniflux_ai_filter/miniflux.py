@@ -75,30 +75,20 @@ class MinifluxClient:
 
     # ── Public API ────────────────────────────────────────────────────
 
-    def get_unread_entries(self, feed_ids: list[int]) -> list[MinifluxEntry]:
-        """Fetch all unread entries for the given feed IDs.
-
-        Iterates over each feed ID individually and merges the results
-        sorted newest-first by ``published_at``.
+    def get_unread_entries(self, feed_id: int) -> list[MinifluxEntry]:
+        """Fetch all unread entries for a single feed.
 
         Parameters
         ----------
-        feed_ids:
-            One or more feed IDs to fetch unread entries from.
+        feed_id:
+            The numeric feed ID to fetch unread entries from.
 
         Returns
         -------
         list[MinifluxEntry]:
-            Normalized entries across all requested feeds.
+            Normalized entries for the requested feed.
         """
-        entries: list[MinifluxEntry] = []
-        for feed_id in feed_ids:
-            raw_entries = self._fetch_feed_entries(feed_id)
-            entries.extend(raw_entries)
-
-        # Sort newest first by published_at (descending)
-        entries.sort(key=lambda e: e.published_at, reverse=True)
-        return entries
+        return self._fetch_feed_entries(feed_id)
 
     def mark_entry_read(self, entry_id: int) -> None:
         """Mark a single entry as read.
