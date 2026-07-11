@@ -8,6 +8,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
+from miniflux_ai_filter.feeds_config import FeedsConfig
 from miniflux_ai_filter.models import Article
 from miniflux_ai_filter.protocols import LLMClient, LLMError
 
@@ -230,3 +231,71 @@ def opencodego_response() -> dict[str, Any]:
             }
         ]
     }
+
+
+# ── Multi-feed integration test fixtures ─────────────────────────────
+
+
+@pytest.fixture
+def article_feed2_generic() -> Article:
+    """A generic article for feed 2."""
+    return Article(
+        id=301,
+        feed_id=2,
+        title="Feed 2 Generic Article",
+        url="https://example.com/feed2-article",
+        published_at="2026-07-09T12:00:00Z",
+        summary="A feed 2 test article.",
+        content="<p>Feed 2 article content.</p>",
+    )
+
+
+@pytest.fixture
+def article_feed2_cars() -> Article:
+    """A car article for feed 2 — should be filtered as uninteresting."""
+    return Article(
+        id=302,
+        feed_id=2,
+        title="New car models released at auto show",
+        url="https://example.com/new-cars",
+        published_at="2026-07-09T11:00:00Z",
+        summary="Several new car models announced.",
+        content=(
+            "Major automakers have unveiled their latest models at the auto show."
+        ),
+    )
+
+
+@pytest.fixture
+def article_feed2_ai() -> Article:
+    """An AI article for feed 2 — should be kept as interesting."""
+    return Article(
+        id=303,
+        feed_id=2,
+        title="AI breakthroughs in 2026",
+        url="https://example.com/ai-2026",
+        published_at="2026-07-09T10:00:00Z",
+        summary="Significant AI advances this year.",
+        content=(
+            "Researchers have achieved major milestones in artificial intelligence."
+        ),
+    )
+
+
+@pytest.fixture
+def multi_feed_config() -> FeedsConfig:
+    """A FeedsConfig with two feeds for integration testing."""
+    return FeedsConfig.model_validate({
+        "feeds": [
+            {
+                "feed_id": 1,
+                "max_articles": 50,
+                "prompt": "First feed classification prompt.",
+            },
+            {
+                "feed_id": 2,
+                "max_articles": 30,
+                "prompt": "Second feed classification prompt.",
+            },
+        ]
+    })
