@@ -30,6 +30,7 @@ from dataclasses import dataclass
 
 from miniflux_ai_filter.classifier import Classifier, ClassificationError
 from miniflux_ai_filter.config import Settings
+from miniflux_ai_filter.feeds_config import FeedsConfig
 from miniflux_ai_filter.models import Article
 from miniflux_ai_filter.opencodego import OpencodeGoClient
 from miniflux_ai_filter.openrouter import OpenRouterClient
@@ -178,11 +179,11 @@ def _create_client(config: Settings) -> LLMClient:
 
 
 def _classify_article(
-    classifier: Classifier, case: EdgeCase
+    classifier: Classifier, case: EdgeCase, system_prompt: str
 ) -> tuple[bool, str | None]:
     """Classify a single article and return (passed, error_message)."""
     try:
-        result = classifier.classify(case.article)
+        result = classifier.classify(case.article, system_prompt=system_prompt)
         passed = result.interesting == case.expected_interesting
         if not passed:
             error = (
@@ -229,7 +230,16 @@ def main() -> None:
 
     classifier = Classifier(client=client, model=model)
 
-    # 3. Run edge cases
+    # 3. Load feeds config for system prompt
+    print("Loading feeds.yaml...")
+    try:
+        feeds_config = FeedsConfig.load()
+        system_prompt = feeds_config.feeds[0].prompt
+    except Exception as exc:
+        print(f"ERROR loading feeds.yaml: {exc}")
+        sys.exit(1)
+
+    # 4. Run edge cases
     cases = _build_cases()
     passed = 0
     failed = 0
@@ -240,7 +250,7 @@ def main() -> None:
         print(f"[{i}/{len(cases)}] {case.description}")
         print(f"  Article: {case.article.title}")
 
-        ok, error = _classify_article(classifier, case)
+        ok, error = _classify_article(classifier, case, system_prompt)
         if ok:
             passed += 1
             print("  ✅ PASS")
@@ -258,7 +268,7 @@ def main() -> None:
     print("=" * 70)
 
     if failed > 0:
-        print("\nConsider tuning the SYSTEM_PROMPT in classifier.py and re-running.")
+        print("\nConsider tuning the prompt in feeds.yaml and re-running.")
         sys.exit(1)
     else:
         print("\nAll edge cases pass! Classification quality is acceptable.")

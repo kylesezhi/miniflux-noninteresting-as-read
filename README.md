@@ -35,21 +35,52 @@ cp .env.example .env
 
 ## Configuration
 
+### Environment Variables
+
 Set the following environment variables in your `.env` file:
 
 | Variable | Required | Description |
 |---|---|---|
 | `MINIFLUX_URL` | Yes | Base URL of your Miniflux instance (e.g., `https://reader.example.com`) |
 | `MINIFLUX_API_TOKEN` | Yes | Miniflux API authentication token |
-| `MINIFLUX_FEED_IDS` | Yes | Comma-separated list of feed IDs to process (e.g., `1,2,3`) |
 | `OPENROUTER_API_KEY` | Yes | OpenRouter API key for LLM access |
+| `OPENCODEGO_API_KEY` | No | Opencode Go API key (required when `LLM_PROVIDER=opencodego`) |
+| `LLM_PROVIDER` | No | LLM provider: `openrouter` (default) or `opencodego` |
+| `OPENROUTER_MODEL` | No | OpenRouter model (default: `openai/gpt-oss-120b:free`) |
+| `OPENCODEGO_MODEL` | No | Opencode Go model (default: `deepseek-v4-flash`) |
+| `OPENCODEGO_TIMEOUT_SECONDS` | No | Opencode Go request timeout (default: `60`) |
+| `MAX_ARTICLES_PER_RUN` | No | Maximum articles per feed per run (default: `100`) |
+| `CLASSIFICATION_DELAY_SECONDS` | No | Delay between LLM calls in seconds (default: `2`) |
 
-The following constants are configured in the source code:
+### Feed Configuration
 
-| Constant | Default | Description |
-|---|---|---|
-| `MAX_ARTICLES_PER_RUN` | `100` | Maximum articles to process per execution |
-| `OPENROUTER_MODEL` | `openai/gpt-oss-120b:free` | LLM model used for classification |
+Feeds are configured via `feeds.yaml`. Each feed entry defines:
+
+- `feed_id`: The numeric Miniflux feed ID
+- `max_articles`: Maximum articles to process per run (optional, defaults to 100)
+- `prompt`: The classification system prompt for this feed
+
+Example:
+
+```yaml
+feeds:
+  - feed_id: 3
+    max_articles: 100
+    prompt: |
+      You are a content classifier. Given an article's details,
+      determine whether it is interesting or not.
+      Respond with a JSON object containing exactly two fields:
+        "interesting": true or false
+        "reason": a short explanation for your decision
+
+      Rules:
+      - Only filter when the primary topic is unwanted.
+      - Do not filter incidental mentions of unwanted topics.
+
+      Interested topics: programming, AI, science, cybersecurity,
+      space, technology, engineering, general interesting news.
+      Uninteresting topics: cars, motorcycles, sports.
+```
 
 ## Usage
 
@@ -59,14 +90,17 @@ uv run python -m miniflux_ai_filter
 
 The tool will:
 
-1. Load configuration from environment variables
+1. Load configuration from environment variables and `feeds.yaml`
 2. Generate a unique run ID
-3. Fetch unread articles from the configured Miniflux feeds
-4. Sort articles newest-first
-5. Limit to `MAX_ARTICLES_PER_RUN` articles
-6. Classify each article using the LLM
-7. Mark non-interesting articles as read in Miniflux
-8. Write a JSONL audit log entry for every processed article
+3. For each configured feed:
+   1. Fetch unread articles from Miniflux
+   2. Sort articles newest-first
+   3. Limit to the feed's `max_articles`
+   4. Classify each article using the feed's prompt via the LLM
+   5. Mark non-interesting articles as read in Miniflux
+   6. Write a JSONL audit log entry for every processed article
+   7. Pause between LLM calls to respect rate limits
+4. Print per-feed and aggregate summary
 
 ## How It Works
 
@@ -107,6 +141,7 @@ The classifier filters only when the **primary topic** of an article is unwanted
 ```
 miniflux-noninteresting-as-read/
 ├── pyproject.toml          # Project metadata and dependencies
+├── feeds.yaml              # Per-feed configuration (feed IDs, prompts, limits)
 ├── .env.example            # Environment variable template
 ├── .gitignore              # Git ignore rules
 ├── README.md               # This file
@@ -119,6 +154,8 @@ miniflux-noninteresting-as-read/
 │   ├── conftest.py         # Shared fixtures (mock clients, sample articles)
 │   ├── test_classifier.py  # Classifier unit tests (formatting, parsing, classification)
 │   ├── test_config.py      # Configuration parsing and validation tests
+│   ├── test_feeds_config.py # Feed YAML configuration tests
+│   ├── test_integration.py # End-to-end integration tests
 │   ├── test_logging.py     # JSONL audit trail tests
 │   ├── test_miniflux.py    # Miniflux API client tests
 │   ├── test_opencodego.py  # Opencode Go client tests
@@ -127,14 +164,15 @@ miniflux-noninteresting-as-read/
     └── miniflux_ai_filter/
         ├── __init__.py     # Package initialization
         ├── __main__.py     # Entry point
-        ├── config.py       # Configuration management
+        ├── config.py       # Configuration management (env vars)
+        ├── feeds_config.py # YAML feed configuration loader
         ├── miniflux.py     # Miniflux API client
         ├── models.py       # Data models (Article, ClassificationResult, etc.)
         ├── openrouter.py   # OpenRouter LLM client
         ├── opencodego.py   # Opencode Go LLM client
         ├── protocols.py    # LLMClient protocol and base exceptions
         ├── classifier.py   # Article classification logic
-        ├── logging.py      # JSONL audit trail
+        ├── jsonl_logger.py # JSONL audit trail
         └── main.py         # Orchestration
 ```
 
@@ -152,6 +190,7 @@ Every processed article produces a JSONL entry in `logs/classifier.jsonl` with t
 - `interesting` — Boolean classification result
 - `reason` — LLM-provided explanation
 - `model` — LLM model used
+- `prompt` — Classification system prompt used
 
 LLM failures and Miniflux update failures are also logged.
 
@@ -183,11 +222,13 @@ Tests cover:
 | Module | Tests | Key scenarios |
 |---|---|---|
 | `classifier.py` | 24 | Article formatting, content truncation, JSON parsing, LLM error handling, edge case classification |
-| `config.py` | 13 | Feed ID parsing, missing required fields, default values, provider config |
+| `feeds_config.py` | 17 | YAML loading, validation, missing fields, default values |
+| `config.py` | 9 | Feed ID parsing, missing required fields, default values, provider config |
 | `miniflux.py` | 9 | Entry deserialization, feed fetching, mark-as-read, error handling, URL construction |
-| `opencodego.py` | 11 | Payload construction, response extraction, HTTP errors, timeouts, auth headers |
-| `openrouter.py` | 10 | Same coverage as Opencode Go client |
-| `logging.py` | 6 | JSONL output, multiple entries, directory creation, error logging |
+| `opencodego.py` | 14 | Payload construction, response extraction, HTTP errors, timeouts, auth headers |
+| `openrouter.py` | 11 | Same coverage as Opencode Go client |
+| `jsonl_logger.py` | 6 | JSONL output, multiple entries, directory creation, error logging |
+| `integration.py` | 3 | End-to-end pipeline tests with mocked clients |
 
 ### Calibration Script
 
@@ -209,7 +250,7 @@ The calibration script sends each edge-case article to your configured LLM provi
 uv run python scripts/calibrate.py
 ```
 
-If any edge cases fail, tune the `SYSTEM_PROMPT` in `src/miniflux_ai_filter/classifier.py` and re-run the calibration script.
+If any edge cases fail, tune the `prompt` in `feeds.yaml` and re-run the calibration script.
 
 ### Manual Testing
 
