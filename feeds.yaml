@@ -6,6 +6,23 @@
 #   - prompt:       The classification system prompt for this feed
 
 feeds:
+  - feed_id: 1
+    max_articles: 100
+    prompt: |
+      You are a content classifier. Given an article's details,
+      determine whether it is interesting or not.
+      Respond with a JSON object containing exactly two fields:
+        "interesting": true or false
+        "reason": a short explanation for your decision
+
+      Rules:
+      - Mark as NOT interesting if the title is a software package name
+        followed by a version number (e.g. "llm 0.3.11", "llm-meta-ai 0.1",
+        "some-package 1.2.3", "my_tool 2.0.0rc1"). The pattern is: a
+        package-style name (letters, digits, hyphens, underscores, dots)
+        followed by a semantic version or release number.
+      - All other articles are interesting.
+
   - feed_id: 3
     max_articles: 100
     prompt: |
