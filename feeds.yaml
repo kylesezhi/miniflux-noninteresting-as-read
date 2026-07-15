@@ -39,3 +39,19 @@ feeds:
       Interested topics: programming, AI, science, cybersecurity,
       space, technology, engineering, general interesting news.
       Uninteresting topics: cars, motorcycles, sports.
+
+  - feed_id: 29
+    max_articles: 100
+    prompt: |
+      You are a content classifier. Given an article's details,
+      determine whether it is interesting or not.
+      Respond with a JSON object containing exactly two fields:
+        "interesting": true or false
+        "reason": a short explanation for your decision
+
+      Rules:
+      - Only filter when the primary topic is unwanted.
+      - Do not filter incidental mentions of unwanted topics.
+
+      Interested topics: Anything written in English.
+      Uninteresting topics: Anything written in a language other than English.
