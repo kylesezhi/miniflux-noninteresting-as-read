@@ -28,26 +28,25 @@ class TestRequiredFields:
                 OPENROUTER_API_KEY="key",
             )
 
-    def test_missing_openrouter_api_key(self) -> None:
-        with pytest.raises(ValidationError, match="OPENROUTER_API_KEY"):
-            Settings(
-                _env_file=None,  # type: ignore[call-arg]
-                MINIFLUX_URL="https://reader.example.com",
-                MINIFLUX_API_TOKEN="token",
-            )
+    def test_openrouter_api_key_defaults_to_empty(self) -> None:
+        settings = Settings(
+            _env_file=None,  # type: ignore[call-arg]
+            MINIFLUX_URL="https://reader.example.com",
+            MINIFLUX_API_TOKEN="token",
+        )
+        assert settings.OPENROUTER_API_KEY == ""
 
 
 class TestDefaults:
     """Tests for default values."""
 
-    def test_provider_defaults_to_openrouter(self) -> None:
+    def test_provider_defaults_to_opencodego(self) -> None:
         settings = Settings(
             _env_file=None,  # type: ignore[call-arg]
             MINIFLUX_URL="https://reader.example.com",
             MINIFLUX_API_TOKEN="token",
-            OPENROUTER_API_KEY="key",
         )
-        assert settings.LLM_PROVIDER == "openrouter"
+        assert settings.LLM_PROVIDER == "opencodego"
 
     def test_max_articles_default(self) -> None:
         settings = Settings(

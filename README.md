@@ -1,11 +1,11 @@
 # Miniflux Non-Interesting As Read
 
-A Python tool that automatically classifies unread Miniflux articles using an LLM (via OpenRouter) and marks non-interesting ones as read — so you never have to wade through articles you don't care about.
+A Python tool that automatically classifies unread Miniflux articles using an LLM (via Opencode Go) and marks non-interesting ones as read — so you never have to wade through articles you don't care about.
 
 ## Features
 
 - Fetches unread articles from a Miniflux RSS reader instance
-- Classifies each article as **interesting** or **not interesting** using an LLM (OpenAI-compatible API via OpenRouter)
+- Classifies each article as **interesting** or **not interesting** using an LLM (Opencode Go, with OpenRouter as a fallback)
 - Automatically marks non-interesting articles as read in Miniflux
 - Configurable via environment variables
 - Full audit trail via JSONL logging
@@ -15,7 +15,7 @@ A Python tool that automatically classifies unread Miniflux articles using an LL
 
 - Python 3.12+
 - A running [Miniflux](https://miniflux.app/) instance with an API token
-- An [OpenRouter](https://openrouter.ai/) API key
+- An [Opencode Go](https://opencode.ai/) API key
 
 ## Installation
 
@@ -43,12 +43,12 @@ Set the following environment variables in your `.env` file:
 |---|---|---|
 | `MINIFLUX_URL` | Yes | Base URL of your Miniflux instance (e.g., `https://reader.example.com`) |
 | `MINIFLUX_API_TOKEN` | Yes | Miniflux API authentication token |
-| `OPENROUTER_API_KEY` | Yes | OpenRouter API key for LLM access |
-| `OPENCODEGO_API_KEY` | No | Opencode Go API key (required when `LLM_PROVIDER=opencodego`) |
-| `LLM_PROVIDER` | No | LLM provider: `openrouter` (default) or `opencodego` |
-| `OPENROUTER_MODEL` | No | OpenRouter model (default: `openai/gpt-oss-120b:free`) |
+| `OPENCODEGO_API_KEY` | Yes | Opencode Go API key |
+| `OPENROUTER_API_KEY` | No | OpenRouter API key (required when `LLM_PROVIDER=openrouter`) |
+| `LLM_PROVIDER` | No | LLM provider: `opencodego` (default) or `openrouter` |
 | `OPENCODEGO_MODEL` | No | Opencode Go model (default: `deepseek-v4-flash`) |
 | `OPENCODEGO_TIMEOUT_SECONDS` | No | Opencode Go request timeout (default: `60`) |
+| `OPENROUTER_MODEL` | No | OpenRouter model (default: `openai/gpt-oss-120b:free`) |
 | `MAX_ARTICLES_PER_RUN` | No | Maximum articles per feed per run (default: `100`) |
 | `CLASSIFICATION_DELAY_SECONDS` | No | Delay between LLM calls in seconds (default: `2`) |
 
@@ -107,7 +107,7 @@ The tool will:
 ```mermaid
 graph TD
     M[Miniflux<br/>RSS Feeds] --> AI[AI Filter<br/>Classifier]
-    AI --> OR[OpenRouter<br/>LLM API]
+    AI --> OG[Opencode Go<br/>LLM API]
     AI --> D{Interesting?}
     D -->|No| MR[Mark Read<br/>in Miniflux]
     D -->|Yes| LU[Leave<br/>Unread]

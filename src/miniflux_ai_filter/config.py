@@ -29,8 +29,8 @@ class Settings(BaseSettings):
         description="Miniflux API token",
     )
     OPENROUTER_API_KEY: str = Field(
-        ...,
-        description="OpenRouter API key",
+        default="",
+        description="OpenRouter API key (required when LLM_PROVIDER=openrouter)",
     )
     OPENCODEGO_API_KEY: str = Field(
         default="",
@@ -57,8 +57,8 @@ class Settings(BaseSettings):
         description="Opencode Go request timeout in seconds",
     )
     LLM_PROVIDER: str = Field(
-        default="openrouter",
-        description="LLM provider to use (openrouter or opencodego)",
+        default="opencodego",
+        description="LLM provider to use (opencodego or openrouter)",
     )
     CLASSIFICATION_DELAY_SECONDS: int = Field(
         default=2,
