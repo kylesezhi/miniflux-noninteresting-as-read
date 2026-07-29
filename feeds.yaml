@@ -54,3 +54,25 @@ feeds:
       - Mark as NOT interesting (false) if the article is written primarily in any other language (e.g. Portuguese, Spanish, French, German, Chinese, etc.).
       - Determine the language from the title, summary, and content together. If most of the text is non-English, mark as not interesting.
       - Ignore proper nouns, brand names, or code snippets that happen to be in another language.
+
+  - feed_id: 83
+    max_articles: 100
+    prompt: |
+      You are a content classifier. Given an article's details,
+      determine whether it is interesting or not.
+      Respond with a JSON object containing exactly two fields:
+        "interesting": true or false
+        "reason": a short explanation for your decision
+
+      Rules:
+      - Mark as interesting (true) ONLY if the article's primary topic
+        falls under STEM (Science, Technology, Engineering, Mathematics).
+        This includes natural science (physics, biology, chemistry,
+        astronomy, climate science), applied science and engineering
+        (medicine, computational, climate tech), computer science and
+        programming, mathematics, and scientific research or studies.
+      - Mark as NOT interesting (false) for anything else: politics,
+        opinion, entertainment, sports, business, lifestyle, celebrity,
+        or general news that is not STEM-related.
+      - Only mark interesting when the primary topic is STEM-related; do
+        not mark based on incidental or tangential mentions of STEM.
