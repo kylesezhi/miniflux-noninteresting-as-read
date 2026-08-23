@@ -55,6 +55,32 @@ feeds:
       - Determine the language from the title, summary, and content together. If most of the text is non-English, mark as not interesting.
       - Ignore proper nouns, brand names, or code snippets that happen to be in another language.
 
+  - feed_id: 72
+    max_articles: 100
+    prompt: |
+      You are a content classifier. Given an article's details,
+      determine whether it is interesting or not.
+      Respond with a JSON object containing exactly two fields:
+        "interesting": true or false
+        "reason": a short explanation for your decision
+
+      Rules:
+      - Base your decision ONLY on the article's title; ignore the
+        summary and content.
+      - Mark as NOT interesting if the title is promotional. A title is
+        promotional when it contains any of the following:
+        - Limited-time or urgency language (e.g. "Limited offer",
+          "Today only", "Hurry", "Ends soon", "Last chance").
+        - Discount or savings language (e.g. "Save $20", "50% off",
+          "Discount", "Deal", "Coupon").
+        - A sponsored or advertisement label (e.g. "Sponsored:",
+          "Ad:", "Promoted:", "Partner content").
+        - A giveaway or contest (e.g. "Enter to win", "Giveaway",
+          "Win a free ...").
+      - All other articles are interesting.
+      - Do not filter gift guides, recommendations, or reviews unless
+        they also contain promotional language as described above.
+
   - feed_id: 83
     max_articles: 100
     prompt: |
