@@ -13,21 +13,25 @@ A Python tool that automatically classifies unread Miniflux articles using an LL
 
 ## Prerequisites
 
-- Python 3.12+
+- Python 3.12+ (and a shell session with [mise](https://mise.jdx.dev) on PATH)
 - A running [Miniflux](https://miniflux.app/) instance with an API token
 - An [Opencode Go](https://opencode.ai/) API key
 
 ## Installation
 
-This project uses [uv](https://docs.astral.sh/uv/) for package management.
+This project uses [mise](https://mise.jdx.dev) for tool management (Python, uv,
+Node and PM2) and [uv](https://docs.astral.sh/uv/) for Python dependencies.
 
 ```bash
 # Clone the repository
 git clone https://github.com/kylesezhi/miniflux-noninteresting-as-read.git
 cd miniflux-noninteresting-as-read
 
-# Install dependencies
-uv sync
+# Install mise (see https://mise.jdx.dev/getting-started.html), then:
+mise install          # provision pinned tools (mise.toml / mise.lock)
+
+# Sync Python dependencies
+mise run install
 
 # Copy and configure environment variables
 cp .env.example .env
@@ -86,7 +90,7 @@ feeds:
 ## Usage
 
 ```bash
-uv run python -m miniflux_ai_filter
+mise run pipeline
 ```
 
 The tool will:
@@ -120,33 +124,69 @@ graph TD
 
 Every processed article produces a JSONL entry in `logs/classifier.jsonl` with full audit details (run ID, article metadata, classification result, model used, and prompt). LLM and Miniflux failures are also logged.
 
+## Web Log Viewer
+
+A lightweight, read-only dashboard for the JSONL audit trail is included.
+It serves a single page (inline CSS/JS, no extra dependencies) with
+classification logs and errors, summary stats, filter tabs, and 15s
+auto-refresh.
+
+```bash
+mise run web
+```
+
+Open `http://<host>:5000`.
+
+| Variable | Default | Description |
+|---|---|---|
+| `WEB_HOST` | `0.0.0.0` | Bind interface (`0.0.0.0` = LAN-accessible, no auth) |
+| `WEB_PORT` | `5000` | Port to listen on |
+| `WEB_LOG_PATH` | `logs/classifier.jsonl` | JSONL audit trail to display |
+
+API: `GET /api/entries?filter=all|errors|classifications&limit=200`.
+
+### Running the viewer under PM2
+
+`ecosystem.config.js` defines a second app, `miniflux-ai-filter-web`
+(autorestart daemon, logs to `logs/pm2/web-*.log`). Run
+`mise run pm2-start` to pick it up after changes.
+
 ## Development
 
 ```bash
 # Run all tests (no API credentials needed)
-uv run pytest
+mise run test
 
 # Calibrate prompts against real LLM (requires configured .env)
-uv run python scripts/calibrate.py
+mise run calibrate
 ```
 
 ## Deployment
 
 ### PM2 (Recommended)
 
-An `ecosystem.config.js` is provided — it runs the pipeline hourly via cron.
+An `ecosystem.config.js` is provided — it runs the pipeline hourly via cron
+and keeps the web log viewer running on port 5000. PM2 is provisioned by
+mise (`npm:pm2@7` in `mise.toml`), so always drive it through the mise tasks
+(or `mise x npm:pm2 -- pm2 ...`); then PM2's daemon — and the tools it spawns
+— resolve mise-managed versions instead of system ones.
 
 ```bash
-npm install -g pm2
-uv sync
-pm2 start ecosystem.config.js
-pm2 save
-pm2 startup   # auto-start on boot
+mise run pm2-start    # start both apps (pipeline + web viewer)
+mise run pm2-save     # save the process list for resurrection
+mise run pm2-status   # keep an eye on things
+mise run pm2-logs     # stream logs
+
+mise x npm:pm2 -- pm2 startup   # auto-start on boot (needs sudo)
 ```
+
+Caveat: `pm2 startup` bakes the path into a systemd unit — with npm:pm2 under
+mise, that's the persistent `~/.local/share/mise/shims/pm2` shim, which keeps
+working across sessions.
 
 To change the schedule, edit `cron_restart` in `ecosystem.config.js`, then:
 ```bash
-pm2 delete miniflux-ai-filter && pm2 start ecosystem.config.js && pm2 save
+mise run pm2-restart
 ```
 
 ### Log Rotation
