@@ -9,6 +9,8 @@ from __future__ import annotations
 
 import logging
 import time
+import uuid
+from importlib import metadata
 from typing import Any
 
 import requests
@@ -17,6 +19,13 @@ from miniflux_ai_filter.protocols import LLMError
 
 
 logger = logging.getLogger(__name__)
+
+try:
+    _VERSION = metadata.version("miniflux-noninteresting-as-read")
+except metadata.PackageNotFoundError:
+    _VERSION = "0.0.0"
+
+USER_AGENT = f"miniflux-noninteresting-as-read/{_VERSION}"
 
 
 class OpencodeGoError(LLMError):
@@ -36,6 +45,9 @@ class OpencodeGoClient:
         Sampling temperature (default 0.2).
     timeout:
         Request timeout in seconds (default 60).
+    session_id:
+        Stable session ID sent as ``x-opencode-session``.  When ``None``,
+        a fresh ``uuid4().hex`` is generated for this client instance.
     """
 
     BASE_URL = "https://opencode.ai/zen/go/v1/chat/completions"
@@ -46,15 +58,19 @@ class OpencodeGoClient:
         model: str,
         temperature: float = 0.2,
         timeout: int = 60,
+        session_id: str | None = None,
     ) -> None:
         self.api_key = api_key
         self.model = model
         self.temperature = temperature
         self.timeout = timeout
+        self.session_id = session_id if session_id else uuid.uuid4().hex
 
         self.headers: dict[str, str] = {
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
+            "User-Agent": USER_AGENT,
+            "x-opencode-session": self.session_id,
         }
 
     # ── Public API ────────────────────────────────────────────────────

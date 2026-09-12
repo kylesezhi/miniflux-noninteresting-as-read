@@ -84,6 +84,15 @@ class TestDefaults:
         )
         assert settings.OPENCODEGO_TIMEOUT_SECONDS == 60
 
+    def test_opencodego_session_id_default(self) -> None:
+        settings = Settings(
+            _env_file=None,  # type: ignore[call-arg]
+            MINIFLUX_URL="https://reader.example.com",
+            MINIFLUX_API_TOKEN="token",
+            OPENROUTER_API_KEY="key",
+        )
+        assert settings.OPENCODEGO_SESSION_ID == ""
+
 
 class TestProviderConfig:
     """Tests for provider-specific configuration."""

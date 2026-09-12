@@ -26,6 +26,7 @@ Milestone 9 of TODO.md:
 from __future__ import annotations
 
 import sys
+import uuid
 from dataclasses import dataclass
 
 from miniflux_ai_filter.classifier import Classifier, ClassificationError
@@ -169,6 +170,7 @@ def _create_client(config: Settings) -> LLMClient:
             api_key=config.OPENCODEGO_API_KEY,
             model=config.OPENCODEGO_MODEL,
             timeout=config.OPENCODEGO_TIMEOUT_SECONDS,
+            session_id=config.OPENCODEGO_SESSION_ID or uuid.uuid4().hex,
         )
     else:
         # Default: OpenRouter

@@ -56,6 +56,13 @@ class Settings(BaseSettings):
         ge=1,
         description="Opencode Go request timeout in seconds",
     )
+    OPENCODEGO_SESSION_ID: str = Field(
+        default="",
+        description=(
+            "Opencode Go session ID (x-opencode-session). Empty = a fresh "
+            "session per run"
+        ),
+    )
     LLM_PROVIDER: str = Field(
         default="opencodego",
         description="LLM provider to use (opencodego or openrouter)",

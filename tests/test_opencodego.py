@@ -180,3 +180,52 @@ class TestSendMessage:
         )
         assert client.headers["Authorization"] == "Bearer my-secret-key"
         assert client.headers["Content-Type"] == "application/json"
+
+
+class TestClientIdentification:
+    """Tests for User-Agent and x-opencode-session headers."""
+
+    def test_user_agent_identifies_app(self) -> None:
+        client = OpencodeGoClient(api_key="key", model="m")
+        ua = client.headers["User-Agent"]
+        assert ua.startswith("miniflux-noninteresting-as-read/")
+        assert not ua.startswith("python-requests")
+
+    def test_session_id_defaults_to_uuid_hex(self) -> None:
+        client = OpencodeGoClient(api_key="key", model="m")
+        session_id = client.headers["x-opencode-session"]
+        assert len(session_id) == 32
+        int(session_id, 16)
+        assert session_id == client.session_id
+
+    def test_explicit_session_id_is_used(self) -> None:
+        client = OpencodeGoClient(
+            api_key="key", model="m", session_id="my-session-123"
+        )
+        assert client.headers["x-opencode-session"] == "my-session-123"
+
+    def test_empty_session_id_falls_back_to_uuid(self) -> None:
+        client = OpencodeGoClient(api_key="key", model="m", session_id="")
+        assert len(client.headers["x-opencode-session"]) == 32
+
+    def test_session_id_stable_across_calls(self) -> None:
+        client = OpencodeGoClient(api_key="key", model="m")
+
+        mock_response = MagicMock(spec=requests.Response)
+        mock_response.ok = True
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            "choices": [{"message": {"content": "ok"}}]
+        }
+
+        with patch(
+            "requests.post", return_value=mock_response
+        ) as mock_post:
+            client.send_message(system_prompt="S.", user_message="U1.")
+            client.send_message(system_prompt="S.", user_message="U2.")
+
+        assert mock_post.call_count == 2
+        first = mock_post.call_args_list[0].kwargs["headers"]
+        second = mock_post.call_args_list[1].kwargs["headers"]
+        assert first["x-opencode-session"] == second["x-opencode-session"]
+        assert first["User-Agent"] == second["User-Agent"]

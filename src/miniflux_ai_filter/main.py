@@ -63,6 +63,7 @@ def run_pipeline() -> None:
             api_key=config.OPENCODEGO_API_KEY,
             model=config.OPENCODEGO_MODEL,
             timeout=config.OPENCODEGO_TIMEOUT_SECONDS,
+            session_id=config.OPENCODEGO_SESSION_ID or run_id,
         )
         model_name = config.OPENCODEGO_MODEL
     else:

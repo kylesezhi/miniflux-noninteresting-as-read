@@ -48,6 +48,7 @@ Set the following environment variables in your `.env` file:
 | `LLM_PROVIDER` | No | LLM provider: `opencodego` (default) or `openrouter` |
 | `OPENCODEGO_MODEL` | No | Opencode Go model (default: `deepseek-v4-flash`) |
 | `OPENCODEGO_TIMEOUT_SECONDS` | No | Opencode Go request timeout (default: `60`) |
+| `OPENCODEGO_SESSION_ID` | No | Stable `x-opencode-session` ID sent to Opencode Go; empty = fresh session per run |
 | `OPENROUTER_MODEL` | No | OpenRouter model (default: `openai/gpt-oss-120b:free`) |
 | `MAX_ARTICLES_PER_RUN` | No | Maximum articles per feed per run (default: `100`) |
 | `CLASSIFICATION_DELAY_SECONDS` | No | Delay between LLM calls in seconds (default: `2`) |
