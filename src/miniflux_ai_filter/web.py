@@ -135,7 +135,7 @@ function stat(label, value, cls) {
 }
 
 function renderStats(s) {
-  const last = s.last_timestamp ? new Date(s.last_timestamp).toLocaleString() : "—";
+  const last = s.last_timestamp ? fmtTime(s.last_timestamp) : "—";
   document.getElementById("stats").innerHTML =
     statsHtml(s) + stat("Last entry", last);
 }
@@ -150,11 +150,14 @@ function statsHtml(s) {
   ].join("");
 }
 
+const pad2 = n => String(n).padStart(2, "0");
+
 function fmtTime(ts) {
   if (!ts) return "—";
   const d = new Date(ts);
   if (isNaN(d)) return ts;
-  return d.toISOString().replace("T", " ").slice(0, 19);
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())} ` +
+    `${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`;
 }
 
 function row(e) {
