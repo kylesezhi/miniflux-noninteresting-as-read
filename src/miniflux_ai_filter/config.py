@@ -74,28 +74,3 @@ class Settings(BaseSettings):
     )
 
     model_config = {"env_file": ".env", "extra": "ignore"}
-
-
-class WebSettings(BaseSettings):
-    """Typed configuration for the read-only web log viewer.
-
-    Kept separate from :class:`Settings` so the viewer can run without the
-    Miniflux/LLM credentials the classification pipeline requires.
-    """
-
-    WEB_HOST: str = Field(
-        default="0.0.0.0",
-        description="Host interface the log viewer binds to (0.0.0.0 = LAN)",
-    )
-    WEB_PORT: int = Field(
-        default=5000,
-        ge=1,
-        le=65535,
-        description="Port the log viewer listens on",
-    )
-    WEB_LOG_PATH: str = Field(
-        default="logs/classifier.jsonl",
-        description="Path to the JSONL audit trail displayed by the viewer",
-    )
-
-    model_config = {"env_file": ".env", "extra": "ignore"}
