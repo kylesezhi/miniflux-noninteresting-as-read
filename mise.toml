@@ -1,0 +1,47 @@
+# mise-en-place task runner for miniflux-noninteresting-as-read.
+#
+# mise is used ONLY as a task runner here — tools and dependencies
+# are managed by uv (uv.lock, .python-version, pyproject.toml).
+# Do NOT add a [tools] section or run `mise lock`.
+
+[tasks.install]
+description = "Sync Python dependencies with uv"
+run = "uv sync"
+
+[tasks.test]
+description = "Run the pytest suite"
+run = "uv run pytest"
+
+[tasks.pipeline]
+description = "Run one classification pipeline run"
+run = "uv run python -m miniflux_ai_filter"
+
+[tasks.calibrate]
+description = "Calibrate feed prompts against the real LLM"
+run = "uv run python scripts/calibrate.py"
+
+# PM2 wrappers — convenience aliases for the single miniflux-ai-filter app.
+
+[tasks.pm2-start]
+description = "Start the PM2 pipeline app"
+run = "pm2 start ecosystem.config.js"
+
+[tasks.pm2-stop]
+description = "Stop the PM2 pipeline app"
+run = "pm2 stop miniflux-ai-filter"
+
+[tasks.pm2-restart]
+description = "Restart the PM2 pipeline app"
+run = "pm2 restart miniflux-ai-filter"
+
+[tasks.pm2-status]
+description = "Show PM2 process list"
+run = "pm2 list"
+
+[tasks.pm2-logs]
+description = "Stream PM2 logs (Ctrl+C to exit)"
+run = "pm2 logs miniflux-ai-filter"
+
+[tasks.pm2-save]
+description = "Save the PM2 process list for resurrection at boot"
+run = "pm2 save"

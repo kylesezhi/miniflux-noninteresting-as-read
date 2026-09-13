@@ -130,6 +130,17 @@ uv run pytest
 uv run python scripts/calibrate.py
 ```
 
+### Tasks
+
+[mise](https://mise.jdx.dev/) is available as a task runner (tasks only — uv manages dependencies):
+
+```bash
+mise run install     # uv sync
+mise run test        # pytest
+mise run pipeline    # run classification pipeline
+mise run calibrate   # calibrate prompts
+```
+
 ## Deployment
 
 ### PM2 (Recommended)
