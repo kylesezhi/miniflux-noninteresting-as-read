@@ -85,17 +85,13 @@ class Classifier:
     def _format_article(article: Article) -> str:
         """Format an article into a user message for the LLM.
 
-        Includes the title, URL, feed ID, publication date, summary,
-        and the first 2000 characters of content.
+        Includes only the title, URL, feed ID, and publication date.
         """
-        content_preview = article.content[:2000]
         return (
             f"Title: {article.title}\n"
             f"URL: {article.url}\n"
             f"Feed ID: {article.feed_id}\n"
-            f"Published: {article.published_at}\n"
-            f"Summary: {article.summary}\n"
-            f"Content: {content_preview}"
+            f"Published: {article.published_at}"
         )
 
     @staticmethod

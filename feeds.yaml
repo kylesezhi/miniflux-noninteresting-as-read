@@ -11,13 +11,15 @@ feeds:
     feed_id: 1
     max_articles: 100
     prompt: |
-      You are a content classifier. Given an article's details,
+      You are a content classifier. Given an article's title,
       determine whether it is interesting or not.
       Respond with a JSON object containing exactly two fields:
         "interesting": true or false
         "reason": a short explanation for your decision
 
       Rules:
+      - Base your decision ONLY on the article's title; ignore the
+        summary and content.
       - Mark as NOT interesting if the title is a software package name
         followed by a version number (e.g. "llm 0.3.11", "llm-meta-ai 0.1",
         "some-package 1.2.3", "my_tool 2.0.0rc1"). The pattern is: a
@@ -29,13 +31,15 @@ feeds:
     feed_id: 3
     max_articles: 100
     prompt: |
-      You are a content classifier. Given an article's details,
+      You are a content classifier. Given an article's title,
       determine whether it is interesting or not.
       Respond with a JSON object containing exactly two fields:
         "interesting": true or false
         "reason": a short explanation for your decision
 
       Rules:
+      - Base your decision ONLY on the article's title; ignore the
+        summary and content.
       - Only filter when the primary topic is unwanted.
       - Do not filter incidental mentions of unwanted topics.
 
@@ -47,16 +51,18 @@ feeds:
     feed_id: 29
     max_articles: 100
     prompt: |
-      You are a language detector. Given an article's details,
+      You are a language detector. Given an article's title,
       determine whether it is written in English.
       Respond with a JSON object containing exactly two fields:
         "interesting": true or false
         "reason": a short explanation for your decision
 
       Rules:
+      - Base your decision ONLY on the article's title; ignore the
+        summary and content.
       - Mark as interesting (true) ONLY if the article is written primarily in English.
       - Mark as NOT interesting (false) if the article is written primarily in any other language (e.g. Portuguese, Spanish, French, German, Chinese, etc.).
-      - Determine the language from the title, summary, and content together. If most of the text is non-English, mark as not interesting.
+      - Determine the language from the title. If the title is mostly non-English, mark as not interesting.
       - Ignore proper nouns, brand names, or code snippets that happen to be in another language.
 
   - feed_name: One Story from The Atlantic
@@ -90,13 +96,15 @@ feeds:
     feed_id: 83
     max_articles: 100
     prompt: |
-      You are a content classifier. Given an article's details,
+      You are a content classifier. Given an article's title,
       determine whether it is interesting or not.
       Respond with a JSON object containing exactly two fields:
         "interesting": true or false
         "reason": a short explanation for your decision
 
       Rules:
+      - Base your decision ONLY on the article's title; ignore the
+        summary and content.
       - Mark as interesting (true) ONLY if the article's primary topic
         falls under STEM (Science, Technology, Engineering, Mathematics).
         This includes natural science (physics, biology, chemistry,

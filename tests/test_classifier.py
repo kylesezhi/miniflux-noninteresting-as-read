@@ -19,23 +19,15 @@ class TestFormatArticle:
         assert "URL: https://example.com/test-article" in result
         assert "Feed ID: 1" in result
         assert "Published: 2026-07-09T12:00:00Z" in result
-        assert "Summary: A test article summary." in result
-        assert "Content: <p>This is the article content.</p>" in result
 
-    def test_format_truncates_content(self) -> None:
-        long_content = "x" * 5000
-        article = Article(
-            id=1,
-            feed_id=1,
-            title="Long Content",
-            url="https://example.com/long",
-            published_at="2026-01-01T00:00:00Z",
-            summary="Summary",
-            content=long_content,
-        )
-        result = Classifier._format_article(article)
-        # Content should be truncated to 2000 characters
-        assert len(result.split("Content: ")[1]) == 2000
+    def test_format_excludes_summary_and_content(
+        self, sample_article: Article
+    ) -> None:
+        result = Classifier._format_article(sample_article)
+        assert "Summary:" not in result
+        assert "Content:" not in result
+        assert "A test article summary." not in result
+        assert "<p>This is the article content.</p>" not in result
 
     def test_format_empty_content(self) -> None:
         article = Article(
@@ -48,7 +40,8 @@ class TestFormatArticle:
             content="",
         )
         result = Classifier._format_article(article)
-        assert "Content: " in result
+        assert "Content:" not in result
+        assert "Title: Empty" in result
 
     def test_format_special_characters(self) -> None:
         article = Article(
