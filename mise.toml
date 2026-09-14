@@ -30,6 +30,10 @@ run = "pm2 start ecosystem.config.js"
 description = "Stop the PM2 pipeline app"
 run = "pm2 stop miniflux-ai-filter"
 
+[tasks.pm2-delete]
+description = "Delete the PM2 pipeline app"
+run = "pm2 delete miniflux-ai-filter"
+
 [tasks.pm2-restart]
 description = "Restart the PM2 pipeline app"
 run = "pm2 restart miniflux-ai-filter"
