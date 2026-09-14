@@ -86,11 +86,12 @@ def run_pipeline() -> None:
 
     for feed_cfg in feeds_config.feeds:
         feed_id = feed_cfg.feed_id
-        print(f"\nFeed {feed_id}: fetching unread articles ...")
+        feed_name = feed_cfg.feed_name or f"feed {feed_id}"
+        print(f"\nFeed {feed_name}: fetching unread articles ...")
         raw_entries = miniflux_client.get_unread_entries(feed_id)
 
         if not raw_entries:
-            print(f"  No unread articles for feed {feed_id}")
+            print(f"  No unread articles for feed {feed_name}")
             continue
 
         raw_entries.sort(key=lambda e: e.published_at, reverse=True)
@@ -151,7 +152,7 @@ def run_pipeline() -> None:
                 time.sleep(config.CLASSIFICATION_DELAY_SECONDS)
 
         print(
-            f"  Feed {feed_id} done — "
+            f"  Feed {feed_name} done — "
             f"processed: {feed_processed}, "
             f"marked read: {feed_marked_read}, "
             f"errors: {feed_errors}"

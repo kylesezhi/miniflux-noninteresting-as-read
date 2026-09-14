@@ -18,6 +18,8 @@ class FeedConfig(BaseModel):
 
     Attributes
     ----------
+    feed_name:
+        A human-readable name for this feed (optional).
     feed_id:
         The numeric Miniflux feed ID.
     max_articles:
@@ -27,6 +29,7 @@ class FeedConfig(BaseModel):
         The classification system prompt to use for this feed.
     """
 
+    feed_name: str | None = Field(default=None, description="Human-readable feed name")
     feed_id: int = Field(..., description="Miniflux feed ID")
     max_articles: int = Field(
         default=100,
